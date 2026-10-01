@@ -9,9 +9,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 # and as students add more modules the glob picks them up automatically.
 COPY *.py ./
 
-# Schema migration SQL files. Applied by notes_dao.apply_migrations() on
-# app startup — see the lifespan hook in main.py.
+# Schema migration SQL files. Applied on startup from hello/migrations.
 COPY migrations/ ./migrations/
+
+# Sprint-report package owned by the data scientist. The draft route imports
+# sprint_report.draft_report and does not modify this package.
+COPY sprint_report ./sprint_report
 
 EXPOSE 8000
 

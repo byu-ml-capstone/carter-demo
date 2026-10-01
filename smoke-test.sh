@@ -15,9 +15,9 @@
 #        the given URL. Useful for smoke-testing a Coolify deploy
 #        (staging or prod) from your laptop after a push.
 #
-# Both modes hit / /health /time /notes (GET + POST). The POST
-# inserts a test row into the database. Clean up afterwards with
-# `curl -X POST <base>/admin/reset` (needs ALLOW_ADMIN_RESET=true).
+# Both modes hit /health, /version, register, and create a project.
+# Workspace routes need the bearer token from register. Data lives in
+# the SQLite file on the workspace-data volume.
 
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -36,7 +36,7 @@ if [ "$MODE" = "local" ]; then
     # docker-compose.yaml. In production Coolify populates this.
     export SERVICE_FQDN_HELLO="$BASE_URL"
 
-    echo "=== local mode: building + starting hello, time, db (docker compose) ==="
+    echo "=== local mode: building + starting hello (docker compose) ==="
     docker compose down --remove-orphans >/dev/null 2>&1 || true
     docker compose up -d --build
 else
@@ -56,41 +56,31 @@ for _ in $(seq 1 60); do
 done
 
 echo
-echo "=== GET / ==="
-curl -sS "$BASE_URL/"
-echo
 echo "=== GET /health ==="
 curl -sS "$BASE_URL/health"
 echo
-echo "=== GET /time (proves hello -> time sidecar comms) ==="
-curl -sS "$BASE_URL/time"
+echo "=== GET /version ==="
+curl -sS "$BASE_URL/version"
 echo
-echo "=== POST /notes (proves hello -> db round-trip; data now persists) ==="
-curl -sS -X POST "$BASE_URL/notes" \
+echo "=== POST /auth/register ==="
+TOKEN=$(curl -sS -X POST "$BASE_URL/auth/register" \
     -H 'Content-Type: application/json' \
-    -d '{"body":"smoke-test note from smoke-test.sh"}'
-echo
-echo "=== GET /notes (reads back everything in the notes table) ==="
-curl -sS "$BASE_URL/notes"
+    -d '{"email":"smoke@example.com","password":"password1"}' \
+    | python3 -c 'import json,sys; print(json.load(sys.stdin)["token"])')
+echo "token received"
+echo "=== POST /projects ==="
+curl -sS -X POST "$BASE_URL/projects" \
+    -H "Authorization: Bearer $TOKEN" \
+    -H 'Content-Type: application/json' \
+    -d '{"name":"Smoke project"}'
 echo
 echo
 
 if [ "$MODE" = "local" ]; then
-    echo "All three services are running:"
-    echo "  hello → http://localhost:8000 (public API — Traefik-routed in prod)"
-    echo "  time  → internal only         (reachable from hello at http://time:8001)"
-    echo "  db    → internal Postgres     (reachable from hello at postgres://...@db:5432)"
-    echo
-    echo "Proof of persistence: POST another /notes row, run 'docker compose down',"
-    echo "then 'docker compose up -d' — GET /notes shows every row you inserted."
-    echo "Only 'docker compose down -v' (the -v drops volumes) wipes the data."
-    echo
-    echo "Hit more endpoints, tail logs (docker compose logs -f),"
-    echo "or stop everything with:  docker compose down"
+    echo "hello is running at http://localhost:8000"
+    echo "SQLite data is on the workspace-data volume and survives docker compose down."
+    echo "docker compose down -v deletes that volume."
+    echo "Stop everything with: docker compose down"
 else
     echo "Remote smoke test complete: $BASE_URL"
-    echo
-    echo "The POST above inserted a test row into the deployed database."
-    echo "Clean up with:  curl -X POST $BASE_URL/admin/reset"
-    echo "(needs ALLOW_ADMIN_RESET=true in the Coolify Application's env vars)"
 fi
