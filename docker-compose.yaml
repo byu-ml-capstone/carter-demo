@@ -1,4 +1,20 @@
 services:
+  frontend:
+    build: ./frontend
+    expose:
+      - "43123"
+    environment:
+      - APP_URL=${SERVICE_FQDN_FRONTEND}
+    volumes:
+      - workspace-data:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:43123/health').read()"]
+      start_period: 30s
+      start_interval: 2s
+      interval: 5m
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
   backend:
     build: ./backend
     expose:

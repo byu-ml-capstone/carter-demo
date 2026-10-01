@@ -9,7 +9,7 @@ import {
 } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api, ApiError } from './api'
-import { AccountBar, useSession } from './session'
+import { useSession } from './session'
 import { TicketModal } from './TicketModal'
 import { toast } from './toast'
 import type {
@@ -309,12 +309,88 @@ export function WorkspacePage() {
     }
   }
 
-  if (loading) return <main className="page">Loading project…</main>
+  // Telemetry derivations
+  const sprintStories =
+    activeStories.length > 0
+      ? activeStories
+      : stories.filter((s) => active && s.open_sprint_id === active.id)
+  const doneCount = sprintStories.filter((s) => s.status === 'Done').length
+  const totalCount = sprintStories.length
+  const progressPct =
+    totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0
+  const velocity = doneCount
+  const dashArray = `${progressPct}, 100`
+
+  if (loading) {
+    return (
+      <main
+        style={{
+          width: '100%',
+          minHeight: 'calc(100vh - 4rem)',
+          background: 'var(--color-surface)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '0.75rem',
+          color: 'var(--color-on-surface-variant)',
+        }}
+      >
+        <span
+          className="material-symbols-outlined"
+          aria-hidden="true"
+          style={{ fontSize: '24px' }}
+        >
+          sync
+        </span>
+        <span style={{ fontSize: '0.875rem' }}>Loading project…</span>
+      </main>
+    )
+  }
+
   if (failed || !project) {
     return (
-      <main className="page">
-        <p>Couldn't load this project.</p>
-        <button type="button" onClick={() => void load()}>
+      <main
+        style={{
+          width: '100%',
+          minHeight: 'calc(100vh - 4rem)',
+          background: 'var(--color-surface)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '1rem',
+        }}
+      >
+        <span
+          className="material-symbols-outlined"
+          style={{ fontSize: '40px', color: 'var(--color-error)' }}
+        >
+          error
+        </span>
+        <p
+          style={{
+            margin: 0,
+            fontSize: '0.875rem',
+            color: 'var(--color-on-surface-variant)',
+          }}
+        >
+          Couldn&apos;t load this project.
+        </p>
+        <button
+          type="button"
+          onClick={() => void load()}
+          style={{
+            height: '2.5rem',
+            padding: '0 1.25rem',
+            background: 'var(--color-primary)',
+            color: 'var(--color-on-primary)',
+            border: 'none',
+            borderRadius: '0.75rem',
+            fontSize: '0.875rem',
+            fontWeight: 500,
+            cursor: 'pointer',
+          }}
+        >
           Try again
         </button>
       </main>
@@ -324,272 +400,1305 @@ export function WorkspacePage() {
   const sprintColumnsBlocked = !active
 
   return (
-    <main className="page">
-      <header className="page-header">
-        <div>
-          <Link to="/">Projects</Link>
-          <h1>{project.name}</h1>
-          {project.description ? (
-            <p className="muted">{project.description}</p>
-          ) : null}
-        </div>
-        <div className="header-actions">
-          <button type="button" onClick={() => setTeamOpen(true)}>
-            Team
-          </button>
-          <AccountBar />
-        </div>
-      </header>
-      <div className="toolbar">
-        <div className="sort" role="group" aria-label="Sort">
-          <button
-            type="button"
-            aria-pressed={sortMode === 'priority'}
-            onClick={() => setSortMode('priority')}
+    <main
+      style={{
+        width: '100%',
+        minHeight: 'calc(100vh - 4rem)',
+        background: 'var(--color-surface)',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <div
+        style={{
+          maxWidth: '1600px',
+          width: '100%',
+          margin: '0 auto',
+          padding: 'var(--spacing-space-lg) var(--spacing-margin)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 'var(--spacing-space-lg)',
+          flex: 1,
+        }}
+      >
+        {/* Breadcrumb + Header */}
+        <div
+          style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}
+        >
+          <nav
+            style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}
           >
-            Priority
-          </button>
-          <button
-            type="button"
-            aria-pressed={sortMode === 'created_at'}
-            onClick={() => setSortMode('created_at')}
-          >
-            Date created
-          </button>
-        </div>
-        <label className="hide-toggle">
-          <input
-            type="checkbox"
-            checked={hideResolved}
-            onChange={(event) => setHideResolved(event.target.checked)}
-          />
-          Hide resolved
-        </label>
-        <div className="sprint-slot">
-          {active ? (
-            <>
-              <span>{sprintLabel('Active', active.goal)}</span>
-              {!confirmClose ? (
-                <button type="button" onClick={() => setConfirmClose(true)}>
-                  Close sprint
-                </button>
-              ) : (
-                <div className="confirm">
-                  <p>
-                    Close this sprint? Unfinished stories will return to
-                    Backlog.
-                  </p>
-                  <label>
-                    Faculty notes
-                    <textarea
-                      value={facultyNotes}
-                      placeholder="Optional"
-                      onChange={(event) => setFacultyNotes(event.target.value)}
-                    />
-                  </label>
-                  <div className="row">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setConfirmClose(false)
-                        setFacultyNotes('')
-                      }}
-                      disabled={closing}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void closeSprint()}
-                      disabled={closing}
-                    >
-                      {closing ? 'Closing…' : 'Confirm'}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </>
-          ) : null}
-          {!active && planned ? (
-            <>
-              <span>{sprintLabel('Planned', planned.goal)}</span>
-              <button type="button" onClick={() => void activate()}>
-                Activate
-              </button>
-            </>
-          ) : null}
-          {!active && !planned ? (
-            <form className="row" onSubmit={(event) => void planSprint(event)}>
-              <input
-                value={goal}
-                placeholder="Sprint goal"
-                aria-label="Sprint goal"
-                onChange={(event) => setGoal(event.target.value)}
-              />
-              <button type="submit">Plan sprint</button>
-            </form>
-          ) : null}
-        </div>
-        <button type="button" onClick={() => setHistoryOpen((open) => !open)}>
-          History
-        </button>
-      </div>
-      {historyOpen ? (
-        <div className="history">
-          {closed.length === 0 ? <p>No closed sprints yet.</p> : null}
-          <ul>
-            {closed.map((sprint) => (
-              <li key={sprint.id}>
-                <Link to={`/sprints/${sprint.id}/report`}>
-                  {sprintLabel('Closed', sprint.goal)}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-      <div className="board">
-        {STATUSES.map((status) => {
-          const rows = columnStories(status)
-          const visible = hideResolved && status === 'Done' ? [] : rows
-          const hiddenCount =
-            hideResolved && status === 'Done' ? rows.length : 0
-          const legalTarget = status === 'Backlog' || !sprintColumnsBlocked
-          const highlighted =
-            draggingId !== null && hoverStatus === status && legalTarget
-          const dragged = stories.find((story) => story.id === draggingId)
-          const slot =
-            dragged && highlighted && dragged.status !== status
-              ? sortStories(
-                  [...rows, { ...dragged, status }],
-                  sortMode,
-                ).findIndex((story) => story.id === dragged.id)
-              : -1
-          return (
-            <section
-              key={status}
-              className={highlighted ? 'column target' : 'column'}
-              data-column={status}
-              onPointerMove={() => {
-                if (draggingId) setHoverStatus(status)
+            <span
+              className="material-symbols-outlined"
+              aria-hidden="true"
+              style={{ fontSize: '14px', color: 'var(--color-outline)' }}
+            >
+              folder
+            </span>
+            <Link
+              to="/"
+              style={{
+                fontSize: '0.8125rem',
+                color: 'var(--color-on-surface-variant)',
+                textDecoration: 'none',
               }}
             >
-              <header>
-                <h2>{status}</h2>
-                {status === 'Backlog' ? (
-                  <button type="button" onClick={() => setAdding(true)}>
-                    Add story
-                  </button>
-                ) : null}
-              </header>
-              {status !== 'Backlog' && sprintColumnsBlocked ? (
-                <p className="banner">
-                  {planned
-                    ? 'No active sprint — activate it to start moving stories here.'
-                    : 'No active sprint — plan one to start moving stories here.'}
-                </p>
-              ) : null}
-              {status === 'Backlog' && adding ? (
-                <form
-                  className="add-story"
-                  onSubmit={(event) => void addStory(event)}
+              Projects
+            </Link>
+            <span
+              style={{
+                fontSize: '0.8125rem',
+                color: 'var(--color-outline-variant)',
+              }}
+            >
+              /
+            </span>
+            <span
+              style={{
+                fontSize: '0.8125rem',
+                color: 'var(--color-on-surface)',
+                fontWeight: 500,
+              }}
+            >
+              {project.name}
+            </span>
+            {active && (
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.25rem',
+                  padding: '0.125rem 0.5rem',
+                  background: 'var(--color-secondary-fixed)',
+                  color: 'var(--color-on-secondary-fixed)',
+                  borderRadius: '9999px',
+                  fontFamily: 'var(--font-family-mono)',
+                  fontSize: '0.6875rem',
+                  fontWeight: 500,
+                  marginLeft: '0.5rem',
+                }}
+              >
+                <span
+                  style={{
+                    width: '0.375rem',
+                    height: '0.375rem',
+                    borderRadius: '9999px',
+                    background: 'var(--color-secondary)',
+                    display: 'inline-block',
+                  }}
+                />
+                Active Sprint
+              </span>
+            )}
+          </nav>
+
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              justifyContent: 'space-between',
+              gap: '1rem',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.25rem',
+              }}
+            >
+              <h1
+                style={{
+                  margin: 0,
+                  fontSize: '1.5rem',
+                  fontWeight: 600,
+                  lineHeight: '2rem',
+                  letterSpacing: '-0.02em',
+                  color: 'var(--color-on-surface)',
+                }}
+              >
+                {project.name}
+              </h1>
+              {project.description ? (
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: '0.875rem',
+                    color: 'var(--color-on-surface-variant)',
+                  }}
                 >
-                  <input
-                    value={title}
-                    placeholder="Title"
-                    aria-label="Title"
-                    onChange={(event) => setTitle(event.target.value)}
-                  />
-                  <textarea
-                    value={description}
-                    placeholder="Description"
-                    aria-label="Description"
-                    onChange={(event) => setDescription(event.target.value)}
-                  />
-                  <label>
-                    Priority
-                    <select
-                      value={priority}
-                      onChange={(event) =>
-                        setPriority(event.target.value as Priority)
-                      }
-                    >
-                      {PRIORITIES.map((item) => (
-                        <option key={item}>{item}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    Type
-                    <select
-                      value={storyType}
-                      onChange={(event) =>
-                        setStoryType(event.target.value as StoryType)
-                      }
-                    >
-                      {STORY_TYPES.map((item) => (
-                        <option key={item}>{item}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <button type="submit" disabled={!title.trim()}>
-                    Add story
-                  </button>
-                </form>
-              ) : null}
-              {visible.length === 0 &&
-              hiddenCount === 0 &&
-              !(status === 'Backlog' && adding) ? (
-                status === 'Backlog' ? (
-                  <p className="empty">
-                    No stories yet — add one
-                    <button type="button" onClick={() => setAdding(true)}>
-                      Add story
-                    </button>
-                  </p>
-                ) : (
-                  <p className="empty">No stories yet.</p>
-                )
-              ) : null}
-              {hiddenCount > 0 && visible.length === 0 ? (
-                <p className="empty">
-                  Resolved stories are hidden. Turn off Hide resolved to see
-                  them.
+                  {project.description}
                 </p>
               ) : null}
-              {visible.map((story, index) => (
-                <div key={story.id}>
-                  {slot === index ? <div className="insert-line" /> : null}
-                  <StoryCard
-                    story={story}
-                    dragging={draggingId === story.id}
-                    inflight={inflight === story.id}
-                    menuOpen={menuFor === story.id}
-                    onOpen={() => {
-                      setMenuFor(null)
-                      setOpenId(story.id)
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                flexShrink: 0,
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setTeamOpen(true)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.375rem',
+                  height: '2.25rem',
+                  padding: '0 0.875rem',
+                  background: 'var(--color-surface-container-lowest)',
+                  border: '1px solid var(--color-outline-variant)',
+                  borderRadius: '0.5rem',
+                  fontSize: '0.875rem',
+                  color: 'var(--color-on-surface)',
+                  cursor: 'pointer',
+                }}
+              >
+                <span
+                  className="material-symbols-outlined"
+                  aria-hidden="true"
+                  style={{ fontSize: '16px' }}
+                >
+                  group
+                </span>
+                Team
+              </button>
+            </div>
+          </div>
+
+          {/* Sprint telemetry bar */}
+          {active && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '1.5rem',
+                padding: '0.75rem 1rem',
+                background: 'var(--color-surface-container-lowest)',
+                borderRadius: '0.75rem',
+                border: '1px solid var(--color-outline-variant)',
+              }}
+            >
+              {/* SVG ring */}
+              <div style={{ position: 'relative', flexShrink: 0 }}>
+                <svg
+                  style={{
+                    width: '2.25rem',
+                    height: '2.25rem',
+                    transform: 'rotate(-90deg)',
+                  }}
+                  viewBox="0 0 36 36"
+                >
+                  <path
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke="var(--color-surface-container)"
+                    strokeWidth="3"
+                  />
+                  <path
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke="var(--color-secondary)"
+                    strokeDasharray={dashArray}
+                    strokeLinecap="round"
+                    strokeWidth="3.2"
+                  />
+                </svg>
+                <span
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontFamily: 'var(--font-family-mono)',
+                    fontSize: '0.5625rem',
+                    fontWeight: 600,
+                    color: 'var(--color-on-surface)',
+                  }}
+                >
+                  {progressPct}%
+                </span>
+              </div>
+
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.125rem',
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: '0.875rem',
+                    fontWeight: 500,
+                    color: 'var(--color-on-surface)',
+                  }}
+                >
+                  {sprintLabel('Active', active.goal)}
+                </span>
+                <span
+                  style={{
+                    fontFamily: 'var(--font-family-mono)',
+                    fontSize: '0.6875rem',
+                    color: 'var(--color-on-surface-variant)',
+                  }}
+                >
+                  {doneCount} of {totalCount} completed
+                </span>
+              </div>
+
+              <div
+                style={{
+                  width: '1px',
+                  height: '2rem',
+                  background: 'var(--color-outline-variant)',
+                }}
+              />
+
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.125rem',
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: '0.75rem',
+                    color: 'var(--color-on-surface-variant)',
+                  }}
+                >
+                  Days remaining
+                </span>
+                <span
+                  style={{
+                    fontFamily: 'var(--font-family-mono)',
+                    fontSize: '0.875rem',
+                    fontWeight: 600,
+                    color: 'var(--color-on-surface)',
+                  }}
+                >
+                  —
+                </span>
+              </div>
+
+              <div
+                style={{
+                  width: '1px',
+                  height: '2rem',
+                  background: 'var(--color-outline-variant)',
+                }}
+              />
+
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.125rem',
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: '0.75rem',
+                    color: 'var(--color-on-surface-variant)',
+                  }}
+                >
+                  Velocity
+                </span>
+                <span
+                  style={{
+                    fontFamily: 'var(--font-family-mono)',
+                    fontSize: '0.875rem',
+                    fontWeight: 600,
+                    color: 'var(--color-on-surface)',
+                  }}
+                >
+                  {velocity}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Controls toolbar */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            flexWrap: 'wrap',
+          }}
+        >
+          {/* Sort segmented pill */}
+          <div
+            role="group"
+            aria-label="Sort"
+            style={{
+              display: 'flex',
+              background: 'var(--color-surface-container)',
+              borderRadius: '0.75rem',
+              padding: '0.25rem',
+              gap: '0.25rem',
+            }}
+          >
+            {(['priority', 'created_at'] as const).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                aria-pressed={sortMode === mode}
+                onClick={() => setSortMode(mode)}
+                style={{
+                  padding: '0.25rem 0.75rem',
+                  borderRadius: '0.5rem',
+                  border: 'none',
+                  background:
+                    sortMode === mode
+                      ? 'var(--color-surface-container-lowest)'
+                      : 'transparent',
+                  color:
+                    sortMode === mode
+                      ? 'var(--color-primary)'
+                      : 'var(--color-on-surface-variant)',
+                  fontWeight: sortMode === mode ? 600 : 400,
+                  fontSize: '0.8125rem',
+                  cursor: 'pointer',
+                  boxShadow:
+                    sortMode === mode
+                      ? '0 1px 2px rgba(15,23,42,0.06)'
+                      : 'none',
+                }}
+              >
+                {mode === 'priority' ? 'Priority' : 'Date created'}
+              </button>
+            ))}
+          </div>
+
+          {/* Hide resolved */}
+          <label
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              cursor: 'pointer',
+              fontSize: '0.8125rem',
+              color: 'var(--color-on-surface-variant)',
+              userSelect: 'none',
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={hideResolved}
+              onChange={(event) => setHideResolved(event.target.checked)}
+              style={{
+                accentColor: 'var(--color-secondary)',
+                cursor: 'pointer',
+              }}
+            />
+            Hide resolved
+          </label>
+
+          <div style={{ flex: 1 }} />
+
+          {/* History */}
+          <button
+            type="button"
+            onClick={() => setHistoryOpen((open) => !open)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.375rem',
+              height: '2.25rem',
+              padding: '0 0.875rem',
+              background: historyOpen
+                ? 'var(--color-surface-container-high)'
+                : 'var(--color-surface-container-lowest)',
+              border: '1px solid var(--color-outline-variant)',
+              borderRadius: '0.5rem',
+              fontSize: '0.8125rem',
+              color: 'var(--color-on-surface)',
+              cursor: 'pointer',
+            }}
+          >
+            <span
+              className="material-symbols-outlined"
+              aria-hidden="true"
+              style={{ fontSize: '16px' }}
+            >
+              history
+            </span>
+            History
+          </button>
+
+          {/* Close sprint */}
+          {active && !confirmClose ? (
+            <button
+              type="button"
+              onClick={() => setConfirmClose(true)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.375rem',
+                height: '2.25rem',
+                padding: '0 0.875rem',
+                background: 'var(--color-surface-container-lowest)',
+                border: '1px solid var(--color-outline-variant)',
+                borderRadius: '0.5rem',
+                fontSize: '0.8125rem',
+                color: 'var(--color-on-surface)',
+                cursor: 'pointer',
+              }}
+            >
+              <span
+                className="material-symbols-outlined"
+                aria-hidden="true"
+                style={{ fontSize: '16px' }}
+              >
+                stop_circle
+              </span>
+              Close sprint
+            </button>
+          ) : null}
+
+          {/* Add story */}
+          <button
+            type="button"
+            onClick={() => setAdding(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.375rem',
+              height: '2.25rem',
+              padding: '0 0.875rem',
+              background: 'var(--color-primary)',
+              color: 'var(--color-on-primary)',
+              border: 'none',
+              borderRadius: '0.5rem',
+              fontSize: '0.8125rem',
+              fontWeight: 500,
+              cursor: 'pointer',
+            }}
+          >
+            <span
+              className="material-symbols-outlined"
+              aria-hidden="true"
+              style={{ fontSize: '16px' }}
+            >
+              add
+            </span>
+            Add Story
+          </button>
+        </div>
+
+        {/* Sprint management strips */}
+        {confirmClose && active ? (
+          <div
+            style={{
+              background: 'var(--color-surface-container-lowest)',
+              borderRadius: '0.75rem',
+              padding: 'var(--spacing-space-md)',
+              border: '1px solid var(--color-outline-variant)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.75rem',
+            }}
+          >
+            <p
+              style={{
+                margin: 0,
+                fontSize: '0.875rem',
+                color: 'var(--color-on-surface)',
+              }}
+            >
+              Close this sprint? Unfinished stories will return to Backlog.
+            </p>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.375rem',
+              }}
+            >
+              <label
+                htmlFor="faculty-notes"
+                style={{
+                  fontSize: '0.75rem',
+                  fontWeight: 500,
+                  color: 'var(--color-on-surface-variant)',
+                }}
+              >
+                Faculty notes
+              </label>
+              <textarea
+                id="faculty-notes"
+                value={facultyNotes}
+                placeholder="Optional"
+                onChange={(event) => setFacultyNotes(event.target.value)}
+                style={{
+                  padding: '0.5rem',
+                  background: 'var(--color-surface-container-low)',
+                  border: '1px solid var(--color-outline-variant)',
+                  borderRadius: '0.5rem',
+                  fontSize: '0.875rem',
+                  minHeight: '72px',
+                  resize: 'vertical',
+                }}
+              />
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                gap: '0.75rem',
+                justifyContent: 'flex-end',
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirmClose(false)
+                  setFacultyNotes('')
+                }}
+                disabled={closing}
+                style={{
+                  height: '2.25rem',
+                  padding: '0 1rem',
+                  background: 'none',
+                  border: '1px solid var(--color-outline-variant)',
+                  borderRadius: '0.5rem',
+                  fontSize: '0.875rem',
+                  color: 'var(--color-on-surface-variant)',
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void closeSprint()}
+                disabled={closing}
+                style={{
+                  height: '2.25rem',
+                  padding: '0 1rem',
+                  background: 'var(--color-error)',
+                  color: 'var(--color-on-error)',
+                  border: 'none',
+                  borderRadius: '0.5rem',
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  opacity: closing ? 0.7 : 1,
+                }}
+              >
+                {closing ? 'Closing…' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        ) : null}
+
+        {!active && planned ? (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '0.75rem 1rem',
+              background: 'var(--color-surface-container-lowest)',
+              borderRadius: '0.75rem',
+              border: '1px solid var(--color-outline-variant)',
+            }}
+          >
+            <span
+              style={{ fontSize: '0.875rem', color: 'var(--color-on-surface)' }}
+            >
+              {sprintLabel('Planned', planned.goal)}
+            </span>
+            <button
+              type="button"
+              onClick={() => void activate()}
+              style={{
+                height: '2.25rem',
+                padding: '0 1rem',
+                background: 'var(--color-secondary)',
+                color: 'var(--color-on-secondary)',
+                border: 'none',
+                borderRadius: '0.5rem',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                cursor: 'pointer',
+              }}
+            >
+              Activate
+            </button>
+          </div>
+        ) : null}
+
+        {!active && !planned ? (
+          <form
+            onSubmit={(event) => void planSprint(event)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              padding: '0.75rem 1rem',
+              background: 'var(--color-surface-container-lowest)',
+              borderRadius: '0.75rem',
+              border: '1px solid var(--color-outline-variant)',
+            }}
+          >
+            <input
+              value={goal}
+              placeholder="Sprint goal"
+              aria-label="Sprint goal"
+              onChange={(event) => setGoal(event.target.value)}
+              style={{
+                flex: 1,
+                height: '2.25rem',
+                padding: '0 0.75rem',
+                background: 'var(--color-surface-container-low)',
+                border: 'none',
+                borderRadius: '0.5rem',
+                fontSize: '0.875rem',
+                color: 'var(--color-on-surface)',
+                outline: 'none',
+              }}
+            />
+            <button
+              type="submit"
+              style={{
+                height: '2.25rem',
+                padding: '0 1rem',
+                background: 'var(--color-primary)',
+                color: 'var(--color-on-primary)',
+                border: 'none',
+                borderRadius: '0.5rem',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                cursor: 'pointer',
+              }}
+            >
+              Plan sprint
+            </button>
+          </form>
+        ) : null}
+
+        {/* History panel */}
+        {historyOpen ? (
+          <div
+            className="history"
+            style={{
+              background: 'var(--color-surface-container-lowest)',
+              borderRadius: '0.75rem',
+              padding: 'var(--spacing-space-md)',
+              border: '1px solid var(--color-outline-variant)',
+            }}
+          >
+            {closed.length === 0 ? (
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: '0.875rem',
+                  color: 'var(--color-on-surface-variant)',
+                }}
+              >
+                No closed sprints yet.
+              </p>
+            ) : null}
+            <ul>
+              {closed.map((sprint) => (
+                <li key={sprint.id}>
+                  <Link
+                    to={`/sprints/${sprint.id}/report`}
+                    style={{
+                      fontSize: '0.875rem',
+                      color: 'var(--color-secondary)',
                     }}
-                    onDragStart={() => setDraggingId(story.id)}
-                    onDragEnd={(x, y) => dropOn(story.id, x, y)}
-                    onToggleMenu={() =>
-                      setMenuFor((current) =>
-                        current === story.id ? null : story.id,
-                      )
-                    }
-                    onMove={(status) => {
-                      setMenuFor(null)
-                      void moveStory(story, status)
+                  >
+                    {sprintLabel('Closed', sprint.goal)}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
+        {/* Kanban board */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, 1fr)',
+            gap: 'var(--spacing-gutter)',
+            alignItems: 'start',
+          }}
+        >
+          {STATUSES.map((status) => {
+            const rows = columnStories(status)
+            const visible = hideResolved && status === 'Done' ? [] : rows
+            const hiddenCount =
+              hideResolved && status === 'Done' ? rows.length : 0
+            const legalTarget = status === 'Backlog' || !sprintColumnsBlocked
+            const highlighted =
+              draggingId !== null && hoverStatus === status && legalTarget
+            const dragged = stories.find((story) => story.id === draggingId)
+            const slot =
+              dragged && highlighted && dragged.status !== status
+                ? sortStories(
+                    [...rows, { ...dragged, status }],
+                    sortMode,
+                  ).findIndex((story) => story.id === dragged.id)
+                : -1
+
+            const columnDotColor: Record<Status, string> = {
+              Backlog: 'var(--color-outline)',
+              'Selected for Sprint': 'var(--color-secondary)',
+              'In Progress': 'var(--color-secondary-container)',
+              Done: 'var(--color-primary)',
+            }
+
+            return (
+              <section
+                key={status}
+                data-column={status}
+                className={highlighted ? 'target' : ''}
+                onPointerMove={() => {
+                  if (draggingId) setHoverStatus(status)
+                }}
+                style={{
+                  background: highlighted
+                    ? 'color-mix(in srgb, var(--color-secondary-fixed) 20%, transparent)'
+                    : 'var(--color-surface-container-low)',
+                  borderRadius: '0.75rem',
+                  padding: '0.5rem',
+                  minHeight: '580px',
+                  boxShadow: '0 1px 3px rgba(15,23,42,0.04)',
+                  outline: highlighted
+                    ? '2px solid var(--color-secondary)'
+                    : 'none',
+                  transition: 'background 0.1s, outline 0.1s',
+                }}
+              >
+                {/* Column header */}
+                <header
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '0.375rem 0.5rem 0.625rem',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: '0.5rem',
+                        height: '0.5rem',
+                        borderRadius: '9999px',
+                        background: columnDotColor[status],
+                        flexShrink: 0,
+                      }}
+                    />
+                    <h2
+                      style={{
+                        margin: 0,
+                        fontSize: '0.8125rem',
+                        fontWeight: 600,
+                        color: 'var(--color-on-surface)',
+                      }}
+                    >
+                      {status}
+                    </h2>
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        minWidth: '1.25rem',
+                        height: '1.25rem',
+                        padding: '0 0.25rem',
+                        borderRadius: '9999px',
+                        background: 'var(--color-surface-container)',
+                        fontFamily: 'var(--font-family-mono)',
+                        fontSize: '0.6875rem',
+                        color: 'var(--color-on-surface-variant)',
+                      }}
+                    >
+                      {visible.length}
+                    </span>
+                  </div>
+                  {status === 'Backlog' ? (
+                    <button
+                      type="button"
+                      onClick={() => setAdding(true)}
+                      aria-label="Add story"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '1.5rem',
+                        height: '1.5rem',
+                        background: 'none',
+                        border: 'none',
+                        borderRadius: '0.25rem',
+                        color: 'var(--color-on-surface-variant)',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <span
+                        className="material-symbols-outlined"
+                        aria-hidden="true"
+                        style={{ fontSize: '16px' }}
+                      >
+                        add
+                      </span>
+                    </button>
+                  ) : null}
+                </header>
+
+                {/* Blocked columns banner */}
+                {status !== 'Backlog' && sprintColumnsBlocked ? (
+                  <p
+                    style={{
+                      margin: '0 0 0.5rem',
+                      padding: '0.5rem',
+                      background: 'var(--color-surface-container)',
+                      borderRadius: '0.5rem',
+                      fontSize: '0.75rem',
+                      color: 'var(--color-on-surface-variant)',
+                    }}
+                  >
+                    {planned
+                      ? 'No active sprint — activate it to start moving stories here.'
+                      : 'No active sprint — plan one to start moving stories here.'}
+                  </p>
+                ) : null}
+
+                {/* Empty states */}
+                {visible.length === 0 && hiddenCount === 0 ? (
+                  status === 'Backlog' ? (
+                    <>
+                      <p
+                        style={{
+                          margin: '0.5rem 0',
+                          padding: '0.75rem',
+                          fontSize: '0.8125rem',
+                          color: 'var(--color-on-surface-variant)',
+                          textAlign: 'center',
+                        }}
+                      >
+                        No stories yet — add one
+                      </p>
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'center',
+                          paddingBottom: '0.5rem',
+                        }}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setAdding(true)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.375rem',
+                            height: '2rem',
+                            padding: '0 0.75rem',
+                            background: 'var(--color-secondary)',
+                            color: 'var(--color-on-secondary)',
+                            border: 'none',
+                            borderRadius: '0.5rem',
+                            fontSize: '0.8125rem',
+                            fontWeight: 500,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Add story
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <p
+                      style={{
+                        margin: '0.5rem 0',
+                        padding: '0.75rem',
+                        fontSize: '0.8125rem',
+                        color: 'var(--color-on-surface-variant)',
+                        textAlign: 'center',
+                      }}
+                    >
+                      No stories yet.
+                    </p>
+                  )
+                ) : null}
+
+                {hiddenCount > 0 && visible.length === 0 ? (
+                  <p
+                    style={{
+                      margin: '0.5rem 0',
+                      padding: '0.75rem',
+                      fontSize: '0.8125rem',
+                      color: 'var(--color-on-surface-variant)',
+                      textAlign: 'center',
+                    }}
+                  >
+                    Resolved stories are hidden. Turn off Hide resolved to see
+                    them.
+                  </p>
+                ) : null}
+
+                {/* Story cards */}
+                {visible.map((story, index) => (
+                  <div key={story.id}>
+                    {slot === index ? (
+                      <div
+                        className="insert-line"
+                        style={{
+                          height: '2px',
+                          background: 'var(--color-secondary)',
+                          borderRadius: '9999px',
+                          margin: '0 0.25rem 0.5rem',
+                        }}
+                      />
+                    ) : null}
+                    <StoryCard
+                      story={story}
+                      dragging={draggingId === story.id}
+                      inflight={inflight === story.id}
+                      menuOpen={menuFor === story.id}
+                      onOpen={() => {
+                        setMenuFor(null)
+                        setOpenId(story.id)
+                      }}
+                      onDragStart={() => setDraggingId(story.id)}
+                      onDragEnd={(x, y) => dropOn(story.id, x, y)}
+                      onToggleMenu={() =>
+                        setMenuFor((current) =>
+                          current === story.id ? null : story.id,
+                        )
+                      }
+                      onMove={(status) => {
+                        setMenuFor(null)
+                        void moveStory(story, status)
+                      }}
+                    />
+                  </div>
+                ))}
+                {slot === visible.length && slot >= 0 ? (
+                  <div
+                    className="insert-line"
+                    style={{
+                      height: '2px',
+                      background: 'var(--color-secondary)',
+                      borderRadius: '9999px',
+                      margin: '0 0.25rem',
                     }}
                   />
-                </div>
-              ))}
-              {slot === visible.length && slot >= 0 ? (
-                <div className="insert-line" />
-              ) : null}
-            </section>
-          )
-        })}
+                ) : null}
+              </section>
+            )
+          })}
+        </div>
       </div>
+
+      {/* Quick add story modal */}
+      {adding ? (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 50,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background:
+              'color-mix(in srgb, var(--color-primary) 20%, transparent)',
+            backdropFilter: 'blur(4px)',
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setAdding(false)
+          }}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '32rem',
+              background: 'var(--color-surface-container-lowest)',
+              borderRadius: '0.75rem',
+              padding: 'var(--spacing-space-lg)',
+              boxShadow: '0 20px 30px -10px rgba(15,23,42,0.08)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1rem',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <h2
+                style={{
+                  margin: 0,
+                  fontSize: '1.125rem',
+                  fontWeight: 600,
+                  color: 'var(--color-on-surface)',
+                }}
+              >
+                Add Story
+              </h2>
+              <button
+                type="button"
+                aria-label="Close"
+                onClick={() => setAdding(false)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'none',
+                  border: 'none',
+                  borderRadius: '0.25rem',
+                  color: 'var(--color-on-surface-variant)',
+                  cursor: 'pointer',
+                  padding: '0.25rem',
+                }}
+              >
+                <span
+                  className="material-symbols-outlined"
+                  aria-hidden="true"
+                  style={{ fontSize: '20px' }}
+                >
+                  close
+                </span>
+              </button>
+            </div>
+
+            <form
+              className="add-story"
+              onSubmit={(event) => void addStory(event)}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.875rem',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.375rem',
+                }}
+              >
+                <label
+                  htmlFor="story-title"
+                  style={{
+                    fontSize: '0.75rem',
+                    fontWeight: 500,
+                    color: 'var(--color-on-surface-variant)',
+                  }}
+                >
+                  Title
+                </label>
+                <input
+                  id="story-title"
+                  value={title}
+                  placeholder="Title"
+                  aria-label="Title"
+                  onChange={(event) => setTitle(event.target.value)}
+                  style={{
+                    height: '2.75rem',
+                    padding: '0 0.75rem',
+                    background: 'var(--color-surface-container-low)',
+                    border: '1px solid var(--color-outline-variant)',
+                    borderRadius: '0.5rem',
+                    fontSize: '0.875rem',
+                    color: 'var(--color-on-surface)',
+                    outline: 'none',
+                  }}
+                />
+              </div>
+
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.375rem',
+                }}
+              >
+                <label
+                  htmlFor="story-description"
+                  style={{
+                    fontSize: '0.75rem',
+                    fontWeight: 500,
+                    color: 'var(--color-on-surface-variant)',
+                  }}
+                >
+                  Description
+                </label>
+                <textarea
+                  id="story-description"
+                  value={description}
+                  placeholder="Description"
+                  aria-label="Description"
+                  onChange={(event) => setDescription(event.target.value)}
+                  style={{
+                    padding: '0.5rem 0.75rem',
+                    background: 'var(--color-surface-container-low)',
+                    border: '1px solid var(--color-outline-variant)',
+                    borderRadius: '0.5rem',
+                    fontSize: '0.875rem',
+                    color: 'var(--color-on-surface)',
+                    outline: 'none',
+                    minHeight: '72px',
+                    resize: 'vertical',
+                  }}
+                />
+              </div>
+
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '0.75rem',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.375rem',
+                  }}
+                >
+                  <label
+                    htmlFor="story-priority"
+                    style={{
+                      fontSize: '0.75rem',
+                      fontWeight: 500,
+                      color: 'var(--color-on-surface-variant)',
+                    }}
+                  >
+                    Priority
+                  </label>
+                  <select
+                    id="story-priority"
+                    value={priority}
+                    onChange={(event) =>
+                      setPriority(event.target.value as Priority)
+                    }
+                    style={{
+                      height: '2.75rem',
+                      padding: '0 0.75rem',
+                      background: 'var(--color-surface-container-low)',
+                      border: '1px solid var(--color-outline-variant)',
+                      borderRadius: '0.5rem',
+                      fontSize: '0.875rem',
+                      color: 'var(--color-on-surface)',
+                    }}
+                  >
+                    {PRIORITIES.map((item) => (
+                      <option key={item}>{item}</option>
+                    ))}
+                  </select>
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.375rem',
+                  }}
+                >
+                  <label
+                    htmlFor="story-type"
+                    style={{
+                      fontSize: '0.75rem',
+                      fontWeight: 500,
+                      color: 'var(--color-on-surface-variant)',
+                    }}
+                  >
+                    Type
+                  </label>
+                  <select
+                    id="story-type"
+                    value={storyType}
+                    onChange={(event) =>
+                      setStoryType(event.target.value as StoryType)
+                    }
+                    style={{
+                      height: '2.75rem',
+                      padding: '0 0.75rem',
+                      background: 'var(--color-surface-container-low)',
+                      border: '1px solid var(--color-outline-variant)',
+                      borderRadius: '0.5rem',
+                      fontSize: '0.875rem',
+                      color: 'var(--color-on-surface)',
+                    }}
+                  >
+                    {STORY_TYPES.map((item) => (
+                      <option key={item}>{item}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: '0.75rem',
+                  paddingTop: '0.25rem',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setAdding(false)}
+                  style={{
+                    height: '2.25rem',
+                    padding: '0 1rem',
+                    background: 'none',
+                    border: '1px solid var(--color-outline-variant)',
+                    borderRadius: '0.5rem',
+                    fontSize: '0.875rem',
+                    color: 'var(--color-on-surface-variant)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!title.trim()}
+                  style={{
+                    height: '2.25rem',
+                    padding: '0 1rem',
+                    background: title.trim()
+                      ? 'var(--color-primary)'
+                      : 'var(--color-surface-container-high)',
+                    color: title.trim()
+                      ? 'var(--color-on-primary)'
+                      : 'var(--color-on-surface-variant)',
+                    border: 'none',
+                    borderRadius: '0.5rem',
+                    fontSize: '0.875rem',
+                    fontWeight: 500,
+                    cursor: title.trim() ? 'pointer' : 'not-allowed',
+                  }}
+                >
+                  Add story
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Ticket modal */}
       {openStory ? (
         <TicketModal
           story={openStory}
@@ -615,6 +1724,8 @@ export function WorkspacePage() {
           onMove={(story, status) => void moveStory(story, status)}
         />
       ) : null}
+
+      {/* Team dialog */}
       {teamOpen ? (
         <TeamDialog
           projectId={projectId}
@@ -683,31 +1794,148 @@ function StoryCard({
     window.addEventListener('pointerup', up)
   }
 
+  const storyId = `#${story.id.slice(-6).toUpperCase()}`
+
   return (
     <article
-      className={`card${dragging ? ' lifting' : ''}${inflight ? ' inflight' : ''}`}
+      className={dragging ? 'lifting' : ''}
+      style={{
+        background:
+          story.status === 'Done'
+            ? 'color-mix(in srgb, var(--color-surface-container-lowest) 80%, transparent)'
+            : 'var(--color-surface-container-lowest)',
+        borderRadius: '0.75rem',
+        padding: 'var(--spacing-space-md)',
+        marginBottom: '0.5rem',
+        boxShadow: dragging
+          ? '0 20px 30px -10px rgba(15,23,42,0.12)'
+          : '0 1px 2px rgba(15,23,42,0.04)',
+        cursor: dragging ? 'grabbing' : 'grab',
+        opacity: inflight ? 0.5 : 1,
+        transform: dragging ? 'scale(1.02)' : 'none',
+        zIndex: dragging ? 10 : 'auto',
+        transition: 'opacity 0.15s, box-shadow 0.15s',
+        position: 'relative',
+      }}
       onPointerDown={pointerDown}
     >
       {dragging ? <div className="placeholder" /> : null}
-      <div className="card-top">
-        <h3>{story.title}</h3>
-        <button
-          type="button"
-          data-no-drag
-          aria-label="Move story"
-          onClick={onToggleMenu}
+
+      {/* Card header */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          gap: '0.5rem',
+          marginBottom: '0.5rem',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.375rem',
+            minWidth: 0,
+          }}
         >
-          …
-        </button>
+          <span
+            style={{
+              fontFamily: 'var(--font-family-mono)',
+              fontSize: '0.6875rem',
+              color: 'var(--color-outline)',
+              flexShrink: 0,
+            }}
+          >
+            {storyId}
+          </span>
+          <TypeIcon type={story.type} />
+        </div>
+
+        {story.status === 'Done' ? (
+          <span
+            className="material-symbols-outlined"
+            aria-hidden="true"
+            style={{
+              fontSize: '16px',
+              color: 'var(--color-secondary)',
+              flexShrink: 0,
+            }}
+          >
+            check_circle
+          </span>
+        ) : (
+          <button
+            type="button"
+            data-no-drag
+            aria-label="Move story"
+            onClick={onToggleMenu}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '1.5rem',
+              height: '1.5rem',
+              background: 'none',
+              border: 'none',
+              borderRadius: '0.25rem',
+              color: 'var(--color-on-surface-variant)',
+              cursor: 'pointer',
+              flexShrink: 0,
+            }}
+          >
+            <span
+              className="material-symbols-outlined"
+              aria-hidden="true"
+              style={{ fontSize: '16px' }}
+            >
+              more_horiz
+            </span>
+          </button>
+        )}
       </div>
+
+      {/* Move menu */}
       {menuOpen ? (
-        <ul className="move-menu" data-no-drag>
+        <ul
+          data-no-drag
+          style={{
+            position: 'absolute',
+            top: '2.5rem',
+            right: '0.5rem',
+            zIndex: 20,
+            listStyle: 'none',
+            margin: 0,
+            padding: '0.25rem',
+            background: 'var(--color-surface-container-lowest)',
+            borderRadius: '0.5rem',
+            border: '1px solid var(--color-outline-variant)',
+            boxShadow: '0 8px 16px -4px rgba(15,23,42,0.08)',
+            minWidth: '10rem',
+          }}
+        >
           {STATUSES.map((status) => (
             <li key={status}>
               <button
                 type="button"
                 disabled={status === story.status}
                 onClick={() => onMove(status)}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: '0.375rem 0.625rem',
+                  background: 'none',
+                  border: 'none',
+                  borderRadius: '0.375rem',
+                  fontSize: '0.8125rem',
+                  color:
+                    status === story.status
+                      ? 'var(--color-on-surface-variant)'
+                      : 'var(--color-on-surface)',
+                  cursor: status === story.status ? 'default' : 'pointer',
+                  opacity: status === story.status ? 0.5 : 1,
+                }}
               >
                 Move to: {status}
               </button>
@@ -715,15 +1943,76 @@ function StoryCard({
           ))}
         </ul>
       ) : null}
-      <div className="card-meta">
+
+      {/* Title */}
+      <h3
+        style={{
+          margin: '0 0 0.5rem',
+          fontSize: '0.875rem',
+          fontWeight: 600,
+          lineHeight: '1.375rem',
+          color: 'var(--color-on-surface)',
+          textDecoration: story.status === 'Done' ? 'line-through' : 'none',
+          textDecorationColor:
+            story.status === 'Done'
+              ? 'color-mix(in srgb, var(--color-on-surface-variant) 40%, transparent)'
+              : 'transparent',
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
+          overflow: 'hidden',
+        }}
+      >
+        {story.title}
+      </h3>
+
+      {/* Meta row */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          flexWrap: 'wrap',
+        }}
+      >
         <PriorityBadge priority={story.priority} />
-        <TypeIcon type={story.type} />
-        <time className="created" dateTime={story.created_at}>
+        <time
+          dateTime={story.created_at}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.25rem',
+            fontSize: '0.75rem',
+            color: 'var(--color-on-surface-variant)',
+          }}
+        >
+          <span
+            className="material-symbols-outlined"
+            aria-hidden="true"
+            style={{ fontSize: '12px' }}
+          >
+            event
+          </span>
           {formatDate(story.created_at)}
         </time>
       </div>
+
+      {/* Branch ref */}
       {story.github_branch_ref ? (
-        <p className="branch" title={story.github_branch_ref}>
+        <p
+          style={{
+            margin: '0.5rem 0 0',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.25rem',
+            fontSize: '0.75rem',
+            color: 'var(--color-on-surface-variant)',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+          title={story.github_branch_ref}
+        >
           <BranchIcon />
           <span>{story.github_branch_ref}</span>
         </p>
@@ -785,32 +2074,141 @@ export function TeamDialog({
         onClose()
       }}
     >
-      <header className="ticket-header">
-        <h2>Team</h2>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: '1rem',
+        }}
+      >
+        <h2
+          style={{
+            margin: 0,
+            fontSize: '1.125rem',
+            fontWeight: 600,
+            color: 'var(--color-on-surface)',
+          }}
+        >
+          Team
+        </h2>
         <button
           type="button"
           className="icon-button"
           aria-label="Close"
           onClick={onClose}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'none',
+            border: 'none',
+            borderRadius: '0.25rem',
+            color: 'var(--color-on-surface-variant)',
+            cursor: 'pointer',
+            padding: '0.25rem',
+          }}
         >
-          ×
+          <span
+            className="material-symbols-outlined"
+            aria-hidden="true"
+            style={{ fontSize: '20px' }}
+          >
+            close
+          </span>
         </button>
-      </header>
-      <ul>
+      </div>
+
+      <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1rem' }}>
         {members.map((member) => (
-          <li key={member.id}>{member.name}</li>
+          <li
+            key={member.id}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              padding: '0.5rem 0',
+              borderBottom: '1px solid var(--color-outline-variant)',
+              fontSize: '0.875rem',
+              color: 'var(--color-on-surface)',
+            }}
+          >
+            <div
+              style={{
+                width: '1.75rem',
+                height: '1.75rem',
+                borderRadius: '9999px',
+                background: 'var(--color-primary-container)',
+                color: 'var(--color-on-primary-container)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.6875rem',
+                fontWeight: 600,
+                flexShrink: 0,
+              }}
+            >
+              {member.name[0]?.toUpperCase() ?? '?'}
+            </div>
+            {member.name}
+          </li>
         ))}
       </ul>
-      <form onSubmit={(event) => void add(event)}>
-        <label>
-          Name
+
+      <form
+        onSubmit={(event) => void add(event)}
+        style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}
+      >
+        <div
+          style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}
+        >
+          <label
+            htmlFor="team-member-name"
+            style={{
+              fontSize: '0.75rem',
+              fontWeight: 500,
+              color: 'var(--color-on-surface-variant)',
+            }}
+          >
+            Name
+          </label>
           <input
+            id="team-member-name"
             value={name}
             onChange={(event) => setName(event.target.value)}
+            placeholder="Teammate's name"
+            style={{
+              height: '2.75rem',
+              padding: '0 0.75rem',
+              background: 'var(--color-surface-container-low)',
+              border: '1px solid var(--color-outline-variant)',
+              borderRadius: '0.5rem',
+              fontSize: '0.875rem',
+              color: 'var(--color-on-surface)',
+              outline: 'none',
+            }}
           />
-        </label>
+        </div>
         {error ? <p className="field-error">{error}</p> : null}
-        <button type="submit" disabled={!name.trim()}>
+        <button
+          type="submit"
+          disabled={!name.trim()}
+          style={{
+            height: '2.25rem',
+            padding: '0 1rem',
+            background: name.trim()
+              ? 'var(--color-primary)'
+              : 'var(--color-surface-container-high)',
+            color: name.trim()
+              ? 'var(--color-on-primary)'
+              : 'var(--color-on-surface-variant)',
+            border: 'none',
+            borderRadius: '0.5rem',
+            fontSize: '0.875rem',
+            fontWeight: 500,
+            cursor: name.trim() ? 'pointer' : 'not-allowed',
+          }}
+        >
           Add teammate
         </button>
       </form>
