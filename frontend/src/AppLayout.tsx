@@ -27,10 +27,7 @@ export function AppLayout() {
   const { session, signOut } = useSession()
   const location = useLocation()
 
-  const navLinks = [
-    { to: '/', label: 'Projects' },
-    { to: '/milestones', label: 'Milestones & Insights' },
-  ]
+  const navLinks = [{ to: '/', label: 'Projects' }]
 
   return (
     <div className="min-h-screen bg-[var(--color-surface)] flex flex-col">
@@ -42,20 +39,12 @@ export function AppLayout() {
           className="flex items-center gap-2.5 shrink-0 mr-6 no-underline"
         >
           <LogoSVG className="w-8 h-8" />
-          <div className="flex flex-col leading-none">
-            <span
-              className="text-[var(--color-on-surface)] font-semibold"
-              style={{ fontSize: '1.125rem', lineHeight: '1.25rem' }}
-            >
-              Capstone PM
-            </span>
-            <span
-              className="text-[var(--color-on-surface-variant)]"
-              style={{ fontSize: '0.6875rem', lineHeight: '0.9375rem' }}
-            >
-              CS 482 Data Science
-            </span>
-          </div>
+          <span
+            className="text-[var(--color-on-surface)] font-semibold"
+            style={{ fontSize: '1.125rem', lineHeight: '1.25rem' }}
+          >
+            My Workspace
+          </span>
         </Link>
 
         {/* Divider */}

@@ -611,30 +611,10 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'space-between',
+                justifyContent: 'flex-end',
                 color: 'var(--color-on-surface-variant)',
               }}
             >
-              <span
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.375rem',
-                  fontFamily: 'var(--font-family-mono)',
-                  fontSize: '0.6875rem',
-                }}
-              >
-                <span
-                  style={{
-                    width: '0.375rem',
-                    height: '0.375rem',
-                    borderRadius: '9999px',
-                    background: 'var(--color-secondary)',
-                    display: 'inline-block',
-                  }}
-                />
-                LATENCY: 14ms
-              </span>
               <span
                 style={{
                   fontFamily: 'var(--font-family-mono)',

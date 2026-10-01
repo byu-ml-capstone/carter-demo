@@ -108,7 +108,7 @@ export function ProjectListPage() {
   const [loading, setLoading] = useState(true)
   const [failed, setFailed] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [creatorOpen, setCreatorOpen] = useState(true)
+  const [creatorOpen, setCreatorOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterTab, setFilterTab] = useState<'all' | 'active' | 'archived'>(
     'all',
@@ -224,35 +224,6 @@ export function ProjectListPage() {
           <div
             style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}
           >
-            <div
-              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-            >
-              <span
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  padding: '0.125rem 0.5rem',
-                  background: 'var(--color-secondary-fixed)',
-                  color: 'var(--color-on-secondary-fixed)',
-                  borderRadius: '9999px',
-                  fontFamily: 'var(--font-family-mono)',
-                  fontSize: '0.6875rem',
-                  fontWeight: 500,
-                }}
-              >
-                Deliverables &amp; Research
-              </span>
-              <span style={{ color: 'var(--color-outline-variant)' }}>·</span>
-              <span
-                style={{
-                  fontFamily: 'var(--font-family-mono)',
-                  fontSize: '0.6875rem',
-                  color: 'var(--color-on-surface-variant)',
-                }}
-              >
-                CS 482 Semester II
-              </span>
-            </div>
             <h1
               style={{
                 margin: 0,
@@ -263,18 +234,20 @@ export function ProjectListPage() {
                 color: 'var(--color-on-surface)',
               }}
             >
-              Projects
+              My Workspace
             </h1>
             <p
               style={{
                 margin: 0,
-                fontSize: '1rem',
-                lineHeight: '1.625rem',
+                fontSize: '0.9375rem',
+                lineHeight: '1.5rem',
                 color: 'var(--color-on-surface-variant)',
+                fontStyle: 'italic',
               }}
             >
-              Manage your capstone deliverables, research pipelines, and sprint
-              boards.
+              &ldquo;Yesterday is history, tomorrow is a mystery, but today is a
+              gift&mdash;that is why it&apos;s called the present.&rdquo;
+              &mdash; Master Oogway
             </p>
           </div>
 
@@ -313,7 +286,7 @@ export function ProjectListPage() {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
+            gridTemplateColumns: 'repeat(3, 1fr)',
             gap: 'var(--spacing-gutter)',
             marginBottom: 'var(--spacing-space-xl)',
           }}
@@ -331,12 +304,6 @@ export function ProjectListPage() {
             icon="play_circle"
           />
           <StatCard
-            label="Pending Milestones"
-            value="—"
-            sub="THIS SPRINT"
-            icon="flag"
-          />
-          <StatCard
             label="Active Researchers"
             value="—"
             sub="TEAM MEMBERS"
@@ -344,219 +311,241 @@ export function ProjectListPage() {
           />
         </div>
 
-        {/* Project creator */}
-        <div
-          className={creatorOpen ? '' : 'hidden'}
-          style={{
-            background: 'var(--color-surface-container-lowest)',
-            borderRadius: '0.75rem',
-            padding: 'var(--spacing-space-lg)',
-            marginBottom: 'var(--spacing-space-lg)',
-            boxShadow: '0 1px 3px rgba(15,23,42,0.06)',
-          }}
-        >
+        {/* Project creator modal */}
+        {creatorOpen && (
           <div
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: '1rem',
+              position: 'fixed',
+              inset: 0,
+              zIndex: 50,
+              pointerEvents: 'none',
             }}
           >
             <div
-              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-            >
-              <span
-                style={{
-                  width: '0.5rem',
-                  height: '0.5rem',
-                  borderRadius: '9999px',
-                  background: 'var(--color-secondary)',
-                  display: 'inline-block',
-                }}
-              />
-              <h2
-                style={{
-                  margin: 0,
-                  fontSize: '1.125rem',
-                  fontWeight: 500,
-                  lineHeight: '1.5rem',
-                  color: 'var(--color-on-surface)',
-                }}
-              >
-                Create New Project
-              </h2>
-            </div>
-            <button
-              type="button"
-              onClick={() => setCreatorOpen(false)}
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: 'none',
-                border: 'none',
-                padding: '0.25rem',
-                borderRadius: '0.25rem',
-                color: 'var(--color-on-surface-variant)',
-                cursor: 'pointer',
-              }}
-              aria-label="Close project creator"
-            >
-              <span
-                className="material-symbols-outlined"
-                aria-hidden="true"
-                style={{ fontSize: '18px' }}
-              >
-                close
-              </span>
-            </button>
-          </div>
-
-          <form
-            onSubmit={(event) => void create(event)}
-            style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.375rem',
+                position: 'absolute',
+                top: '5rem',
+                right: 'var(--spacing-gutter)',
+                width: '360px',
+                background: 'var(--color-surface-container-lowest)',
+                borderRadius: '0.75rem',
+                padding: 'var(--spacing-space-lg)',
+                boxShadow: '0 8px 32px rgba(15,23,42,0.16)',
+                pointerEvents: 'auto',
               }}
             >
-              <label
-                htmlFor="project-name-input"
+              <div
                 style={{
-                  fontSize: '0.75rem',
-                  lineHeight: '1rem',
-                  fontWeight: 500,
-                  color: 'var(--color-on-surface-variant)',
-                }}
-              >
-                <span>Name</span>
-              </label>
-              <input
-                id="project-name-input"
-                value={name}
-                maxLength={100}
-                onChange={(event) => setName(event.target.value)}
-                placeholder="e.g. Data Pipeline Analysis"
-                style={{
-                  height: '2.75rem',
-                  padding: '0 0.75rem',
-                  background: 'var(--color-surface-container-low)',
-                  border: '1px solid var(--color-outline-variant)',
-                  borderRadius: '0.5rem',
-                  fontSize: '0.875rem',
-                  color: 'var(--color-on-surface)',
-                  outline: 'none',
-                }}
-              />
-            </div>
-            {name.length > 100 ? (
-              <p className="field-error">
-                Name must be 100 characters or fewer.
-              </p>
-            ) : null}
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.375rem',
-              }}
-            >
-              <label
-                htmlFor="project-desc-input"
-                style={{
-                  fontSize: '0.75rem',
-                  lineHeight: '1rem',
-                  fontWeight: 500,
-                  color: 'var(--color-on-surface-variant)',
-                }}
-              >
-                <span>Description</span>
-              </label>
-              <input
-                id="project-desc-input"
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
-                placeholder="Optional: describe the project scope"
-                style={{
-                  height: '2.75rem',
-                  padding: '0 0.75rem',
-                  background: 'var(--color-surface-container-low)',
-                  border: '1px solid var(--color-outline-variant)',
-                  borderRadius: '0.5rem',
-                  fontSize: '0.875rem',
-                  color: 'var(--color-on-surface)',
-                  outline: 'none',
-                }}
-              />
-            </div>
-            {error ? <p className="field-error">{error}</p> : null}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.75rem',
-                justifyContent: 'flex-end',
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => setCreatorOpen(false)}
-                style={{
-                  height: '2.25rem',
-                  padding: '0 1rem',
-                  background: 'none',
-                  border: '1px solid var(--color-outline-variant)',
-                  borderRadius: '0.5rem',
-                  fontSize: '0.875rem',
-                  color: 'var(--color-on-surface-variant)',
-                  cursor: 'pointer',
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={!name.trim() || name.trim().length > 100 || busy}
-                style={{
-                  height: '2.25rem',
-                  padding: '0 1rem',
-                  background:
-                    !name.trim() || name.trim().length > 100 || busy
-                      ? 'var(--color-surface-container-high)'
-                      : 'var(--color-primary)',
-                  color:
-                    !name.trim() || name.trim().length > 100 || busy
-                      ? 'var(--color-on-surface-variant)'
-                      : 'var(--color-on-primary)',
-                  border: 'none',
-                  borderRadius: '0.5rem',
-                  fontSize: '0.875rem',
-                  fontWeight: 500,
-                  cursor:
-                    !name.trim() || name.trim().length > 100 || busy
-                      ? 'not-allowed'
-                      : 'pointer',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.375rem',
+                  justifyContent: 'space-between',
+                  marginBottom: '1rem',
                 }}
               >
-                <span
-                  className="material-symbols-outlined"
-                  aria-hidden="true"
-                  style={{ fontSize: '16px' }}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                  }}
                 >
-                  rocket_launch
-                </span>
-                Create project
-              </button>
+                  <span
+                    style={{
+                      width: '0.5rem',
+                      height: '0.5rem',
+                      borderRadius: '9999px',
+                      background: 'var(--color-secondary)',
+                      display: 'inline-block',
+                    }}
+                  />
+                  <h2
+                    style={{
+                      margin: 0,
+                      fontSize: '1.125rem',
+                      fontWeight: 500,
+                      lineHeight: '1.5rem',
+                      color: 'var(--color-on-surface)',
+                    }}
+                  >
+                    Create New Project
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCreatorOpen(false)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'none',
+                    border: 'none',
+                    padding: '0.25rem',
+                    borderRadius: '0.25rem',
+                    color: 'var(--color-on-surface-variant)',
+                    cursor: 'pointer',
+                  }}
+                  aria-label="Close project creator"
+                >
+                  <span
+                    className="material-symbols-outlined"
+                    aria-hidden="true"
+                    style={{ fontSize: '18px' }}
+                  >
+                    close
+                  </span>
+                </button>
+              </div>
+
+              <form
+                onSubmit={(event) => void create(event)}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1rem',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.375rem',
+                  }}
+                >
+                  <label
+                    htmlFor="project-name-input"
+                    style={{
+                      fontSize: '0.75rem',
+                      lineHeight: '1rem',
+                      fontWeight: 500,
+                      color: 'var(--color-on-surface-variant)',
+                    }}
+                  >
+                    <span>Name</span>
+                  </label>
+                  <input
+                    id="project-name-input"
+                    value={name}
+                    maxLength={100}
+                    onChange={(event) => setName(event.target.value)}
+                    placeholder="e.g. Data Pipeline Analysis"
+                    style={{
+                      height: '2.75rem',
+                      padding: '0 0.75rem',
+                      background: 'var(--color-surface-container-low)',
+                      border: '1px solid var(--color-outline-variant)',
+                      borderRadius: '0.5rem',
+                      fontSize: '0.875rem',
+                      color: 'var(--color-on-surface)',
+                      outline: 'none',
+                    }}
+                  />
+                </div>
+                {name.length > 100 ? (
+                  <p className="field-error">
+                    Name must be 100 characters or fewer.
+                  </p>
+                ) : null}
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.375rem',
+                  }}
+                >
+                  <label
+                    htmlFor="project-desc-input"
+                    style={{
+                      fontSize: '0.75rem',
+                      lineHeight: '1rem',
+                      fontWeight: 500,
+                      color: 'var(--color-on-surface-variant)',
+                    }}
+                  >
+                    <span>Description</span>
+                  </label>
+                  <input
+                    id="project-desc-input"
+                    value={description}
+                    onChange={(event) => setDescription(event.target.value)}
+                    placeholder="Optional: describe the project scope"
+                    style={{
+                      height: '2.75rem',
+                      padding: '0 0.75rem',
+                      background: 'var(--color-surface-container-low)',
+                      border: '1px solid var(--color-outline-variant)',
+                      borderRadius: '0.5rem',
+                      fontSize: '0.875rem',
+                      color: 'var(--color-on-surface)',
+                      outline: 'none',
+                    }}
+                  />
+                </div>
+                {error ? <p className="field-error">{error}</p> : null}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    justifyContent: 'flex-end',
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setCreatorOpen(false)}
+                    style={{
+                      height: '2.25rem',
+                      padding: '0 1rem',
+                      background: 'none',
+                      border: '1px solid var(--color-outline-variant)',
+                      borderRadius: '0.5rem',
+                      fontSize: '0.875rem',
+                      color: 'var(--color-on-surface-variant)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!name.trim() || name.trim().length > 100 || busy}
+                    style={{
+                      height: '2.25rem',
+                      padding: '0 1rem',
+                      background:
+                        !name.trim() || name.trim().length > 100 || busy
+                          ? 'var(--color-surface-container-high)'
+                          : 'var(--color-primary)',
+                      color:
+                        !name.trim() || name.trim().length > 100 || busy
+                          ? 'var(--color-on-surface-variant)'
+                          : 'var(--color-on-primary)',
+                      border: 'none',
+                      borderRadius: '0.5rem',
+                      fontSize: '0.875rem',
+                      fontWeight: 500,
+                      cursor:
+                        !name.trim() || name.trim().length > 100 || busy
+                          ? 'not-allowed'
+                          : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.375rem',
+                    }}
+                  >
+                    <span
+                      className="material-symbols-outlined"
+                      aria-hidden="true"
+                      style={{ fontSize: '16px' }}
+                    >
+                      rocket_launch
+                    </span>
+                    Create project
+                  </button>
+                </div>
+              </form>
             </div>
-          </form>
-        </div>
+          </div>
+        )}
 
         {/* Search + filter bar */}
         <div
