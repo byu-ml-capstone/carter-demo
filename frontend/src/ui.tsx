@@ -76,7 +76,8 @@ export function BranchIcon() {
 
 const PRIORITY_CLASSES: Record<Priority, string> = {
   High: 'bg-[var(--color-error-container)] text-[var(--color-on-error-container)]',
-  Medium: 'bg-[var(--color-surface-container-high)] text-[var(--color-on-surface)]',
+  Medium:
+    'bg-[var(--color-surface-container-high)] text-[var(--color-on-surface)]',
   Low: 'bg-[var(--color-surface-container)] text-[var(--color-on-surface-variant)]',
 }
 

@@ -121,7 +121,10 @@ export function AppLayout() {
                 className="flex items-center gap-1 text-[var(--color-on-surface-variant)] hover:text-[var(--color-on-surface)] transition-colors px-2 py-1 rounded-lg hover:bg-[var(--color-surface-container-low)]"
                 style={{ fontSize: '0.8125rem' }}
               >
-                <span className="material-symbols-outlined text-[16px]" aria-hidden="true">
+                <span
+                  className="material-symbols-outlined text-[16px]"
+                  aria-hidden="true"
+                >
                   logout
                 </span>
                 Sign out

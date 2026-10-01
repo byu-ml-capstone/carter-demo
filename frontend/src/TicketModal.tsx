@@ -150,7 +150,13 @@ export function TicketModal({
             flexShrink: 0,
           }}
         >
-          <span className="material-symbols-outlined" aria-hidden="true" style={{ fontSize: '20px' }}>close</span>
+          <span
+            className="material-symbols-outlined"
+            aria-hidden="true"
+            style={{ fontSize: '20px' }}
+          >
+            close
+          </span>
         </button>
       </header>
       <label>

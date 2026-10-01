@@ -112,7 +112,8 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
             left: '-4rem',
             width: '14rem',
             height: '14rem',
-            background: 'color-mix(in srgb, var(--color-surface-dim) 40%, transparent)',
+            background:
+              'color-mix(in srgb, var(--color-surface-dim) 40%, transparent)',
           }}
         />
         <div
@@ -122,7 +123,8 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
             right: '-4rem',
             width: '15rem',
             height: '15rem',
-            background: 'color-mix(in srgb, var(--color-secondary-fixed) 30%, transparent)',
+            background:
+              'color-mix(in srgb, var(--color-secondary-fixed) 30%, transparent)',
           }}
         />
 
@@ -151,10 +153,15 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
               >
                 <LogoSVG className="w-full h-full" />
               </div>
-
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.25rem',
+              }}
+            >
               <h1
                 style={{
                   margin: 0,
@@ -176,8 +183,20 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
             style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}
           >
             {/* Email */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.375rem',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
                 <label
                   htmlFor="email"
                   style={{
@@ -190,11 +209,24 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
                 >
                   Email
                 </label>
-                <span aria-hidden="true" style={{ fontFamily: 'var(--font-family-mono)', fontSize: '0.6875rem', color: 'var(--color-outline)' }}>
+                <span
+                  aria-hidden="true"
+                  style={{
+                    fontFamily: 'var(--font-family-mono)',
+                    fontSize: '0.6875rem',
+                    color: 'var(--color-outline)',
+                  }}
+                >
                   SYS.ID
                 </span>
               </div>
-              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <div
+                style={{
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+              >
                 <span
                   className="material-symbols-outlined"
                   aria-hidden="true"
@@ -233,8 +265,20 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
             </div>
 
             {/* Password */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.375rem',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
                 <label
                   htmlFor="password"
                   style={{
@@ -261,7 +305,13 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
                   </a>
                 )}
               </div>
-              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <div
+                style={{
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+              >
                 <span
                   className="material-symbols-outlined"
                   aria-hidden="true"
@@ -278,7 +328,9 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
                 <input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
-                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                  autoComplete={
+                    mode === 'login' ? 'current-password' : 'new-password'
+                  }
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   placeholder="••••••••••••"
@@ -314,20 +366,34 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
                     cursor: 'pointer',
                   }}
                 >
-                  <span className="material-symbols-outlined" aria-hidden="true" style={{ fontSize: '18px' }}>
+                  <span
+                    className="material-symbols-outlined"
+                    aria-hidden="true"
+                    style={{ fontSize: '18px' }}
+                  >
                     {showPassword ? 'visibility_off' : 'visibility'}
                   </span>
                 </button>
               </div>
             </div>
 
-            {mode === 'register' && password.length > 0 && password.length < 8 ? (
-              <p className="field-error">Password must be at least 8 characters.</p>
+            {mode === 'register' &&
+            password.length > 0 &&
+            password.length < 8 ? (
+              <p className="field-error">
+                Password must be at least 8 characters.
+              </p>
             ) : null}
 
             {/* Confirm password (register only) */}
             {mode === 'register' ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.375rem',
+                }}
+              >
                 <label
                   htmlFor="confirm"
                   style={{
@@ -340,7 +406,13 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
                 >
                   Confirm password
                 </label>
-                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <div
+                  style={{
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                >
                   <span
                     className="material-symbols-outlined"
                     aria-hidden="true"
@@ -379,7 +451,9 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
               </div>
             ) : null}
 
-            {mode === 'register' && confirm.length > 0 && confirm !== password ? (
+            {mode === 'register' &&
+            confirm.length > 0 &&
+            confirm !== password ? (
               <p className="field-error">Passwords don’t match.</p>
             ) : null}
 
@@ -387,7 +461,13 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
 
             {/* Remember me (login only) */}
             {mode === 'login' && (
-              <div style={{ display: 'flex', alignItems: 'center', padding: '0.25rem 0' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '0.25rem 0',
+                }}
+              >
                 <label
                   style={{
                     display: 'flex',
@@ -408,7 +488,12 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
                       accentColor: 'var(--color-primary)',
                     }}
                   />
-                  <span style={{ fontSize: '0.8125rem', color: 'var(--color-on-surface-variant)' }}>
+                  <span
+                    style={{
+                      fontSize: '0.8125rem',
+                      color: 'var(--color-on-surface-variant)',
+                    }}
+                  >
                     Remember me on this workstation
                   </span>
                 </label>
@@ -423,8 +508,12 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
                 width: '100%',
                 height: '2.75rem',
                 marginTop: '0.25rem',
-                background: canSubmit ? 'var(--color-primary)' : 'var(--color-surface-container-high)',
-                color: canSubmit ? 'var(--color-on-primary)' : 'var(--color-on-surface-variant)',
+                background: canSubmit
+                  ? 'var(--color-primary)'
+                  : 'var(--color-surface-container-high)',
+                color: canSubmit
+                  ? 'var(--color-on-primary)'
+                  : 'var(--color-on-surface-variant)',
                 border: 'none',
                 borderRadius: '0.75rem',
                 display: 'flex',
@@ -440,14 +529,31 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
               }}
             >
               <span>{submitLabel}</span>
-              <span className="material-symbols-outlined" aria-hidden="true" style={{ fontSize: '18px' }}>
+              <span
+                className="material-symbols-outlined"
+                aria-hidden="true"
+                style={{ fontSize: '18px' }}
+              >
                 {busy ? 'sync' : 'arrow_forward'}
               </span>
             </button>
 
             {/* Switch mode link */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: '0.5rem' }}>
-              <p style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--color-on-surface-variant)' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingTop: '0.5rem',
+              }}
+            >
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: '0.8125rem',
+                  color: 'var(--color-on-surface-variant)',
+                }}
+              >
                 {mode === 'login' ? (
                   <>
                     Don&apos;t have a workspace?{' '}
@@ -494,13 +600,21 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
               paddingBottom: '1rem',
               borderBottomLeftRadius: '0.75rem',
               borderBottomRightRadius: '0.75rem',
-              background: 'color-mix(in srgb, var(--color-surface-container-low) 60%, transparent)',
+              background:
+                'color-mix(in srgb, var(--color-surface-container-low) 60%, transparent)',
               display: 'flex',
               flexDirection: 'column',
               gap: '0.5rem',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'var(--color-on-surface-variant)' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                color: 'var(--color-on-surface-variant)',
+              }}
+            >
               <span
                 style={{
                   display: 'flex',
@@ -541,7 +655,8 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
                 opacity: 0.8,
               }}
             >
-              Designed for streamlined project workflows &amp; data-driven milestone tracking.
+              Designed for streamlined project workflows &amp; data-driven
+              milestone tracking.
             </p>
           </div>
         </div>
@@ -559,24 +674,43 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span className="material-symbols-outlined" aria-hidden="true" style={{ fontSize: '16px', color: 'var(--color-outline)' }}>
+            <span
+              className="material-symbols-outlined"
+              aria-hidden="true"
+              style={{ fontSize: '16px', color: 'var(--color-outline)' }}
+            >
               school
             </span>
-            <span style={{ fontFamily: 'var(--font-family-mono)', fontSize: '0.6875rem' }}>
+            <span
+              style={{
+                fontFamily: 'var(--font-family-mono)',
+                fontSize: '0.6875rem',
+              }}
+            >
               DEPT OF DATA SCIENCE
             </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <a
               href="#privacy"
-              style={{ fontFamily: 'var(--font-family-mono)', fontSize: '0.6875rem', color: 'inherit', textDecoration: 'none' }}
+              style={{
+                fontFamily: 'var(--font-family-mono)',
+                fontSize: '0.6875rem',
+                color: 'inherit',
+                textDecoration: 'none',
+              }}
             >
               Privacy
             </a>
             <span style={{ color: 'var(--color-outline)' }}>/</span>
             <a
               href="#audit"
-              style={{ fontFamily: 'var(--font-family-mono)', fontSize: '0.6875rem', color: 'inherit', textDecoration: 'none' }}
+              style={{
+                fontFamily: 'var(--font-family-mono)',
+                fontSize: '0.6875rem',
+                color: 'inherit',
+                textDecoration: 'none',
+              }}
             >
               Audit Logs
             </a>

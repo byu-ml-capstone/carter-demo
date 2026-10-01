@@ -335,7 +335,13 @@ export function WorkspacePage() {
           color: 'var(--color-on-surface-variant)',
         }}
       >
-        <span className="material-symbols-outlined" aria-hidden="true" style={{ fontSize: '24px' }}>sync</span>
+        <span
+          className="material-symbols-outlined"
+          aria-hidden="true"
+          style={{ fontSize: '24px' }}
+        >
+          sync
+        </span>
         <span style={{ fontSize: '0.875rem' }}>Loading project…</span>
       </main>
     )
@@ -355,8 +361,19 @@ export function WorkspacePage() {
           gap: '1rem',
         }}
       >
-        <span className="material-symbols-outlined" style={{ fontSize: '40px', color: 'var(--color-error)' }}>error</span>
-        <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--color-on-surface-variant)' }}>
+        <span
+          className="material-symbols-outlined"
+          style={{ fontSize: '40px', color: 'var(--color-error)' }}
+        >
+          error
+        </span>
+        <p
+          style={{
+            margin: 0,
+            fontSize: '0.875rem',
+            color: 'var(--color-on-surface-variant)',
+          }}
+        >
           Couldn&apos;t load this project.
         </p>
         <button
@@ -405,9 +422,19 @@ export function WorkspacePage() {
         }}
       >
         {/* Breadcrumb + Header */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          <nav style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-            <span className="material-symbols-outlined" aria-hidden="true" style={{ fontSize: '14px', color: 'var(--color-outline)' }}>folder</span>
+        <div
+          style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}
+        >
+          <nav
+            style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}
+          >
+            <span
+              className="material-symbols-outlined"
+              aria-hidden="true"
+              style={{ fontSize: '14px', color: 'var(--color-outline)' }}
+            >
+              folder
+            </span>
             <Link
               to="/"
               style={{
@@ -418,8 +445,21 @@ export function WorkspacePage() {
             >
               Projects
             </Link>
-            <span style={{ fontSize: '0.8125rem', color: 'var(--color-outline-variant)' }}>/</span>
-            <span style={{ fontSize: '0.8125rem', color: 'var(--color-on-surface)', fontWeight: 500 }}>
+            <span
+              style={{
+                fontSize: '0.8125rem',
+                color: 'var(--color-outline-variant)',
+              }}
+            >
+              /
+            </span>
+            <span
+              style={{
+                fontSize: '0.8125rem',
+                color: 'var(--color-on-surface)',
+                fontWeight: 500,
+              }}
+            >
               {project.name}
             </span>
             {active && (
@@ -452,8 +492,21 @@ export function WorkspacePage() {
             )}
           </nav>
 
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              justifyContent: 'space-between',
+              gap: '1rem',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.25rem',
+              }}
+            >
               <h1
                 style={{
                   margin: 0,
@@ -467,12 +520,25 @@ export function WorkspacePage() {
                 {project.name}
               </h1>
               {project.description ? (
-                <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--color-on-surface-variant)' }}>
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: '0.875rem',
+                    color: 'var(--color-on-surface-variant)',
+                  }}
+                >
                   {project.description}
                 </p>
               ) : null}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                flexShrink: 0,
+              }}
+            >
               <button
                 type="button"
                 onClick={() => setTeamOpen(true)}
@@ -490,7 +556,13 @@ export function WorkspacePage() {
                   cursor: 'pointer',
                 }}
               >
-                <span className="material-symbols-outlined" aria-hidden="true" style={{ fontSize: '16px' }}>group</span>
+                <span
+                  className="material-symbols-outlined"
+                  aria-hidden="true"
+                  style={{ fontSize: '16px' }}
+                >
+                  group
+                </span>
                 Team
               </button>
             </div>
@@ -512,7 +584,11 @@ export function WorkspacePage() {
               {/* SVG ring */}
               <div style={{ position: 'relative', flexShrink: 0 }}>
                 <svg
-                  style={{ width: '2.25rem', height: '2.25rem', transform: 'rotate(-90deg)' }}
+                  style={{
+                    width: '2.25rem',
+                    height: '2.25rem',
+                    transform: 'rotate(-90deg)',
+                  }}
                   viewBox="0 0 36 36"
                 >
                   <path
@@ -547,27 +623,101 @@ export function WorkspacePage() {
                 </span>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.125rem' }}>
-                <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-on-surface)' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.125rem',
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: '0.875rem',
+                    fontWeight: 500,
+                    color: 'var(--color-on-surface)',
+                  }}
+                >
                   {sprintLabel('Active', active.goal)}
                 </span>
-                <span style={{ fontFamily: 'var(--font-family-mono)', fontSize: '0.6875rem', color: 'var(--color-on-surface-variant)' }}>
+                <span
+                  style={{
+                    fontFamily: 'var(--font-family-mono)',
+                    fontSize: '0.6875rem',
+                    color: 'var(--color-on-surface-variant)',
+                  }}
+                >
                   {doneCount} of {totalCount} completed
                 </span>
               </div>
 
-              <div style={{ width: '1px', height: '2rem', background: 'var(--color-outline-variant)' }} />
+              <div
+                style={{
+                  width: '1px',
+                  height: '2rem',
+                  background: 'var(--color-outline-variant)',
+                }}
+              />
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.125rem' }}>
-                <span style={{ fontSize: '0.75rem', color: 'var(--color-on-surface-variant)' }}>Days remaining</span>
-                <span style={{ fontFamily: 'var(--font-family-mono)', fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-on-surface)' }}>—</span>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.125rem',
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: '0.75rem',
+                    color: 'var(--color-on-surface-variant)',
+                  }}
+                >
+                  Days remaining
+                </span>
+                <span
+                  style={{
+                    fontFamily: 'var(--font-family-mono)',
+                    fontSize: '0.875rem',
+                    fontWeight: 600,
+                    color: 'var(--color-on-surface)',
+                  }}
+                >
+                  —
+                </span>
               </div>
 
-              <div style={{ width: '1px', height: '2rem', background: 'var(--color-outline-variant)' }} />
+              <div
+                style={{
+                  width: '1px',
+                  height: '2rem',
+                  background: 'var(--color-outline-variant)',
+                }}
+              />
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.125rem' }}>
-                <span style={{ fontSize: '0.75rem', color: 'var(--color-on-surface-variant)' }}>Velocity</span>
-                <span style={{ fontFamily: 'var(--font-family-mono)', fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-on-surface)' }}>{velocity}</span>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.125rem',
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: '0.75rem',
+                    color: 'var(--color-on-surface-variant)',
+                  }}
+                >
+                  Velocity
+                </span>
+                <span
+                  style={{
+                    fontFamily: 'var(--font-family-mono)',
+                    fontSize: '0.875rem',
+                    fontWeight: 600,
+                    color: 'var(--color-on-surface)',
+                  }}
+                >
+                  {velocity}
+                </span>
               </div>
             </div>
           )}
@@ -616,7 +766,9 @@ export function WorkspacePage() {
                   fontSize: '0.8125rem',
                   cursor: 'pointer',
                   boxShadow:
-                    sortMode === mode ? '0 1px 2px rgba(15,23,42,0.06)' : 'none',
+                    sortMode === mode
+                      ? '0 1px 2px rgba(15,23,42,0.06)'
+                      : 'none',
                 }}
               >
                 {mode === 'priority' ? 'Priority' : 'Date created'}
@@ -640,7 +792,10 @@ export function WorkspacePage() {
               type="checkbox"
               checked={hideResolved}
               onChange={(event) => setHideResolved(event.target.checked)}
-              style={{ accentColor: 'var(--color-secondary)', cursor: 'pointer' }}
+              style={{
+                accentColor: 'var(--color-secondary)',
+                cursor: 'pointer',
+              }}
             />
             Hide resolved
           </label>
@@ -667,7 +822,13 @@ export function WorkspacePage() {
               cursor: 'pointer',
             }}
           >
-            <span className="material-symbols-outlined" aria-hidden="true" style={{ fontSize: '16px' }}>history</span>
+            <span
+              className="material-symbols-outlined"
+              aria-hidden="true"
+              style={{ fontSize: '16px' }}
+            >
+              history
+            </span>
             History
           </button>
 
@@ -690,7 +851,13 @@ export function WorkspacePage() {
                 cursor: 'pointer',
               }}
             >
-              <span className="material-symbols-outlined" aria-hidden="true" style={{ fontSize: '16px' }}>stop_circle</span>
+              <span
+                className="material-symbols-outlined"
+                aria-hidden="true"
+                style={{ fontSize: '16px' }}
+              >
+                stop_circle
+              </span>
               Close sprint
             </button>
           ) : null}
@@ -714,7 +881,13 @@ export function WorkspacePage() {
               cursor: 'pointer',
             }}
           >
-            <span className="material-symbols-outlined" aria-hidden="true" style={{ fontSize: '16px' }}>add</span>
+            <span
+              className="material-symbols-outlined"
+              aria-hidden="true"
+              style={{ fontSize: '16px' }}
+            >
+              add
+            </span>
             Add Story
           </button>
         </div>
@@ -732,13 +905,29 @@ export function WorkspacePage() {
               gap: '0.75rem',
             }}
           >
-            <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--color-on-surface)' }}>
+            <p
+              style={{
+                margin: 0,
+                fontSize: '0.875rem',
+                color: 'var(--color-on-surface)',
+              }}
+            >
               Close this sprint? Unfinished stories will return to Backlog.
             </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.375rem',
+              }}
+            >
               <label
                 htmlFor="faculty-notes"
-                style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--color-on-surface-variant)' }}
+                style={{
+                  fontSize: '0.75rem',
+                  fontWeight: 500,
+                  color: 'var(--color-on-surface-variant)',
+                }}
               >
                 Faculty notes
               </label>
@@ -758,10 +947,19 @@ export function WorkspacePage() {
                 }}
               />
             </div>
-            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+            <div
+              style={{
+                display: 'flex',
+                gap: '0.75rem',
+                justifyContent: 'flex-end',
+              }}
+            >
               <button
                 type="button"
-                onClick={() => { setConfirmClose(false); setFacultyNotes('') }}
+                onClick={() => {
+                  setConfirmClose(false)
+                  setFacultyNotes('')
+                }}
                 disabled={closing}
                 style={{
                   height: '2.25rem',
@@ -811,7 +1009,9 @@ export function WorkspacePage() {
               border: '1px solid var(--color-outline-variant)',
             }}
           >
-            <span style={{ fontSize: '0.875rem', color: 'var(--color-on-surface)' }}>
+            <span
+              style={{ fontSize: '0.875rem', color: 'var(--color-on-surface)' }}
+            >
               {sprintLabel('Planned', planned.goal)}
             </span>
             <button
@@ -895,7 +1095,13 @@ export function WorkspacePage() {
             }}
           >
             {closed.length === 0 ? (
-              <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--color-on-surface-variant)' }}>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: '0.875rem',
+                  color: 'var(--color-on-surface-variant)',
+                }}
+              >
                 No closed sprints yet.
               </p>
             ) : null}
@@ -904,7 +1110,10 @@ export function WorkspacePage() {
                 <li key={sprint.id}>
                   <Link
                     to={`/sprints/${sprint.id}/report`}
-                    style={{ fontSize: '0.875rem', color: 'var(--color-secondary)' }}
+                    style={{
+                      fontSize: '0.875rem',
+                      color: 'var(--color-secondary)',
+                    }}
                   >
                     {sprintLabel('Closed', sprint.goal)}
                   </Link>
@@ -963,7 +1172,9 @@ export function WorkspacePage() {
                   padding: '0.5rem',
                   minHeight: '580px',
                   boxShadow: '0 1px 3px rgba(15,23,42,0.04)',
-                  outline: highlighted ? '2px solid var(--color-secondary)' : 'none',
+                  outline: highlighted
+                    ? '2px solid var(--color-secondary)'
+                    : 'none',
                   transition: 'background 0.1s, outline 0.1s',
                 }}
               >
@@ -976,7 +1187,13 @@ export function WorkspacePage() {
                     padding: '0.375rem 0.5rem 0.625rem',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                    }}
+                  >
                     <span
                       style={{
                         width: '0.5rem',
@@ -1032,7 +1249,13 @@ export function WorkspacePage() {
                         cursor: 'pointer',
                       }}
                     >
-                      <span className="material-symbols-outlined" aria-hidden="true" style={{ fontSize: '16px' }}>add</span>
+                      <span
+                        className="material-symbols-outlined"
+                        aria-hidden="true"
+                        style={{ fontSize: '16px' }}
+                      >
+                        add
+                      </span>
                     </button>
                   ) : null}
                 </header>
@@ -1070,7 +1293,13 @@ export function WorkspacePage() {
                       >
                         No stories yet — add one
                       </p>
-                      <div style={{ display: 'flex', justifyContent: 'center', paddingBottom: '0.5rem' }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'center',
+                          paddingBottom: '0.5rem',
+                        }}
+                      >
                         <button
                           type="button"
                           onClick={() => setAdding(true)}
@@ -1118,7 +1347,8 @@ export function WorkspacePage() {
                       textAlign: 'center',
                     }}
                   >
-                    Resolved stories are hidden. Turn off Hide resolved to see them.
+                    Resolved stories are hidden. Turn off Hide resolved to see
+                    them.
                   </p>
                 ) : null}
 
@@ -1186,10 +1416,13 @@ export function WorkspacePage() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: 'color-mix(in srgb, var(--color-primary) 20%, transparent)',
+            background:
+              'color-mix(in srgb, var(--color-primary) 20%, transparent)',
             backdropFilter: 'blur(4px)',
           }}
-          onClick={(e) => { if (e.target === e.currentTarget) setAdding(false) }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setAdding(false)
+          }}
         >
           <div
             style={{
@@ -1204,8 +1437,21 @@ export function WorkspacePage() {
               gap: '1rem',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <h2 style={{ margin: 0, fontSize: '1.125rem', fontWeight: 600, color: 'var(--color-on-surface)' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <h2
+                style={{
+                  margin: 0,
+                  fontSize: '1.125rem',
+                  fontWeight: 600,
+                  color: 'var(--color-on-surface)',
+                }}
+              >
                 Add Story
               </h2>
               <button
@@ -1224,19 +1470,39 @@ export function WorkspacePage() {
                   padding: '0.25rem',
                 }}
               >
-                <span className="material-symbols-outlined" aria-hidden="true" style={{ fontSize: '20px' }}>close</span>
+                <span
+                  className="material-symbols-outlined"
+                  aria-hidden="true"
+                  style={{ fontSize: '20px' }}
+                >
+                  close
+                </span>
               </button>
             </div>
 
             <form
               className="add-story"
               onSubmit={(event) => void addStory(event)}
-              style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.875rem',
+              }}
             >
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.375rem',
+                }}
+              >
                 <label
                   htmlFor="story-title"
-                  style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--color-on-surface-variant)' }}
+                  style={{
+                    fontSize: '0.75rem',
+                    fontWeight: 500,
+                    color: 'var(--color-on-surface-variant)',
+                  }}
                 >
                   Title
                 </label>
@@ -1259,10 +1525,20 @@ export function WorkspacePage() {
                 />
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.375rem',
+                }}
+              >
                 <label
                   htmlFor="story-description"
-                  style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--color-on-surface-variant)' }}
+                  style={{
+                    fontSize: '0.75rem',
+                    fontWeight: 500,
+                    color: 'var(--color-on-surface-variant)',
+                  }}
                 >
                   Description
                 </label>
@@ -1286,18 +1562,36 @@ export function WorkspacePage() {
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '0.75rem',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.375rem',
+                  }}
+                >
                   <label
                     htmlFor="story-priority"
-                    style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--color-on-surface-variant)' }}
+                    style={{
+                      fontSize: '0.75rem',
+                      fontWeight: 500,
+                      color: 'var(--color-on-surface-variant)',
+                    }}
                   >
                     Priority
                   </label>
                   <select
                     id="story-priority"
                     value={priority}
-                    onChange={(event) => setPriority(event.target.value as Priority)}
+                    onChange={(event) =>
+                      setPriority(event.target.value as Priority)
+                    }
                     style={{
                       height: '2.75rem',
                       padding: '0 0.75rem',
@@ -1313,17 +1607,29 @@ export function WorkspacePage() {
                     ))}
                   </select>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.375rem',
+                  }}
+                >
                   <label
                     htmlFor="story-type"
-                    style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--color-on-surface-variant)' }}
+                    style={{
+                      fontSize: '0.75rem',
+                      fontWeight: 500,
+                      color: 'var(--color-on-surface-variant)',
+                    }}
                   >
                     Type
                   </label>
                   <select
                     id="story-type"
                     value={storyType}
-                    onChange={(event) => setStoryType(event.target.value as StoryType)}
+                    onChange={(event) =>
+                      setStoryType(event.target.value as StoryType)
+                    }
                     style={{
                       height: '2.75rem',
                       padding: '0 0.75rem',
@@ -1341,7 +1647,14 @@ export function WorkspacePage() {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', paddingTop: '0.25rem' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: '0.75rem',
+                  paddingTop: '0.25rem',
+                }}
+              >
                 <button
                   type="button"
                   onClick={() => setAdding(false)}
@@ -1364,8 +1677,12 @@ export function WorkspacePage() {
                   style={{
                     height: '2.25rem',
                     padding: '0 1rem',
-                    background: title.trim() ? 'var(--color-primary)' : 'var(--color-surface-container-high)',
-                    color: title.trim() ? 'var(--color-on-primary)' : 'var(--color-on-surface-variant)',
+                    background: title.trim()
+                      ? 'var(--color-primary)'
+                      : 'var(--color-surface-container-high)',
+                    color: title.trim()
+                      ? 'var(--color-on-primary)'
+                      : 'var(--color-on-surface-variant)',
                     border: 'none',
                     borderRadius: '0.5rem',
                     fontSize: '0.875rem',
@@ -1483,9 +1800,10 @@ function StoryCard({
     <article
       className={dragging ? 'lifting' : ''}
       style={{
-        background: story.status === 'Done'
-          ? 'color-mix(in srgb, var(--color-surface-container-lowest) 80%, transparent)'
-          : 'var(--color-surface-container-lowest)',
+        background:
+          story.status === 'Done'
+            ? 'color-mix(in srgb, var(--color-surface-container-lowest) 80%, transparent)'
+            : 'var(--color-surface-container-lowest)',
         borderRadius: '0.75rem',
         padding: 'var(--spacing-space-md)',
         marginBottom: '0.5rem',
@@ -1513,7 +1831,14 @@ function StoryCard({
           marginBottom: '0.5rem',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', minWidth: 0 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.375rem',
+            minWidth: 0,
+          }}
+        >
           <span
             style={{
               fontFamily: 'var(--font-family-mono)',
@@ -1531,7 +1856,11 @@ function StoryCard({
           <span
             className="material-symbols-outlined"
             aria-hidden="true"
-            style={{ fontSize: '16px', color: 'var(--color-secondary)', flexShrink: 0 }}
+            style={{
+              fontSize: '16px',
+              color: 'var(--color-secondary)',
+              flexShrink: 0,
+            }}
           >
             check_circle
           </span>
@@ -1555,7 +1884,13 @@ function StoryCard({
               flexShrink: 0,
             }}
           >
-            <span className="material-symbols-outlined" aria-hidden="true" style={{ fontSize: '16px' }}>more_horiz</span>
+            <span
+              className="material-symbols-outlined"
+              aria-hidden="true"
+              style={{ fontSize: '16px' }}
+            >
+              more_horiz
+            </span>
           </button>
         )}
       </div>
@@ -1651,7 +1986,13 @@ function StoryCard({
             color: 'var(--color-on-surface-variant)',
           }}
         >
-          <span className="material-symbols-outlined" aria-hidden="true" style={{ fontSize: '12px' }}>event</span>
+          <span
+            className="material-symbols-outlined"
+            aria-hidden="true"
+            style={{ fontSize: '12px' }}
+          >
+            event
+          </span>
           {formatDate(story.created_at)}
         </time>
       </div>
@@ -1741,7 +2082,14 @@ export function TeamDialog({
           marginBottom: '1rem',
         }}
       >
-        <h2 style={{ margin: 0, fontSize: '1.125rem', fontWeight: 600, color: 'var(--color-on-surface)' }}>
+        <h2
+          style={{
+            margin: 0,
+            fontSize: '1.125rem',
+            fontWeight: 600,
+            color: 'var(--color-on-surface)',
+          }}
+        >
           Team
         </h2>
         <button
@@ -1761,7 +2109,13 @@ export function TeamDialog({
             padding: '0.25rem',
           }}
         >
-          <span className="material-symbols-outlined" aria-hidden="true" style={{ fontSize: '20px' }}>close</span>
+          <span
+            className="material-symbols-outlined"
+            aria-hidden="true"
+            style={{ fontSize: '20px' }}
+          >
+            close
+          </span>
         </button>
       </div>
 
@@ -1801,11 +2155,20 @@ export function TeamDialog({
         ))}
       </ul>
 
-      <form onSubmit={(event) => void add(event)} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+      <form
+        onSubmit={(event) => void add(event)}
+        style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}
+      >
+        <div
+          style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}
+        >
           <label
             htmlFor="team-member-name"
-            style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--color-on-surface-variant)' }}
+            style={{
+              fontSize: '0.75rem',
+              fontWeight: 500,
+              color: 'var(--color-on-surface-variant)',
+            }}
           >
             Name
           </label>
@@ -1833,8 +2196,12 @@ export function TeamDialog({
           style={{
             height: '2.25rem',
             padding: '0 1rem',
-            background: name.trim() ? 'var(--color-primary)' : 'var(--color-surface-container-high)',
-            color: name.trim() ? 'var(--color-on-primary)' : 'var(--color-on-surface-variant)',
+            background: name.trim()
+              ? 'var(--color-primary)'
+              : 'var(--color-surface-container-high)',
+            color: name.trim()
+              ? 'var(--color-on-primary)'
+              : 'var(--color-on-surface-variant)',
             border: 'none',
             borderRadius: '0.5rem',
             fontSize: '0.875rem',

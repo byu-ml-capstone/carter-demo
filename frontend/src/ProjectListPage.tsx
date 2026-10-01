@@ -27,7 +27,13 @@ function StatCard({
         gap: '0.5rem',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+        }}
+      >
         <div>
           <p
             style={{
@@ -65,7 +71,14 @@ function StatCard({
             justifyContent: 'center',
           }}
         >
-          <span className="material-symbols-outlined" aria-hidden="true" style={{ fontSize: '18px', color: 'var(--color-on-surface-variant)' }}>
+          <span
+            className="material-symbols-outlined"
+            aria-hidden="true"
+            style={{
+              fontSize: '18px',
+              color: 'var(--color-on-surface-variant)',
+            }}
+          >
             {icon}
           </span>
         </div>
@@ -97,7 +110,9 @@ export function ProjectListPage() {
   const [busy, setBusy] = useState(false)
   const [creatorOpen, setCreatorOpen] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [filterTab, setFilterTab] = useState<'all' | 'active' | 'archived'>('all')
+  const [filterTab, setFilterTab] = useState<'all' | 'active' | 'archived'>(
+    'all',
+  )
   const [sortMode, setSortMode] = useState<'recent' | 'name'>('recent')
 
   async function load() {
@@ -206,8 +221,12 @@ export function ProjectListPage() {
             gap: '1rem',
           }}
         >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div
+            style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}
+          >
+            <div
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+            >
               <span
                 style={{
                   display: 'inline-flex',
@@ -254,7 +273,8 @@ export function ProjectListPage() {
                 color: 'var(--color-on-surface-variant)',
               }}
             >
-              Manage your capstone deliverables, research pipelines, and sprint boards.
+              Manage your capstone deliverables, research pipelines, and sprint
+              boards.
             </p>
           </div>
 
@@ -278,7 +298,11 @@ export function ProjectListPage() {
               flexShrink: 0,
             }}
           >
-            <span className="material-symbols-outlined" aria-hidden="true" style={{ fontSize: '18px' }}>
+            <span
+              className="material-symbols-outlined"
+              aria-hidden="true"
+              style={{ fontSize: '18px' }}
+            >
               add_circle
             </span>
             New Project
@@ -294,10 +318,30 @@ export function ProjectListPage() {
             marginBottom: 'var(--spacing-space-xl)',
           }}
         >
-          <StatCard label="Total Projects" value={totalProjects} sub="ALL TIME" icon="folder" />
-          <StatCard label="Active Pipeline" value="—" sub="IN PROGRESS" icon="play_circle" />
-          <StatCard label="Pending Milestones" value="—" sub="THIS SPRINT" icon="flag" />
-          <StatCard label="Active Researchers" value="—" sub="TEAM MEMBERS" icon="group" />
+          <StatCard
+            label="Total Projects"
+            value={totalProjects}
+            sub="ALL TIME"
+            icon="folder"
+          />
+          <StatCard
+            label="Active Pipeline"
+            value="—"
+            sub="IN PROGRESS"
+            icon="play_circle"
+          />
+          <StatCard
+            label="Pending Milestones"
+            value="—"
+            sub="THIS SPRINT"
+            icon="flag"
+          />
+          <StatCard
+            label="Active Researchers"
+            value="—"
+            sub="TEAM MEMBERS"
+            icon="group"
+          />
         </div>
 
         {/* Project creator */}
@@ -319,7 +363,9 @@ export function ProjectListPage() {
               marginBottom: '1rem',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+            >
               <span
                 style={{
                   width: '0.5rem',
@@ -357,7 +403,13 @@ export function ProjectListPage() {
               }}
               aria-label="Close project creator"
             >
-              <span className="material-symbols-outlined" aria-hidden="true" style={{ fontSize: '18px' }}>close</span>
+              <span
+                className="material-symbols-outlined"
+                aria-hidden="true"
+                style={{ fontSize: '18px' }}
+              >
+                close
+              </span>
             </button>
           </div>
 
@@ -365,7 +417,13 @@ export function ProjectListPage() {
             onSubmit={(event) => void create(event)}
             style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
           >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.375rem',
+              }}
+            >
               <label
                 htmlFor="project-name-input"
                 style={{
@@ -396,9 +454,17 @@ export function ProjectListPage() {
               />
             </div>
             {name.length > 100 ? (
-              <p className="field-error">Name must be 100 characters or fewer.</p>
+              <p className="field-error">
+                Name must be 100 characters or fewer.
+              </p>
             ) : null}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.375rem',
+              }}
+            >
               <label
                 htmlFor="project-desc-input"
                 style={{
@@ -428,7 +494,14 @@ export function ProjectListPage() {
               />
             </div>
             {error ? <p className="field-error">{error}</p> : null}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'flex-end' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                justifyContent: 'flex-end',
+              }}
+            >
               <button
                 type="button"
                 onClick={() => setCreatorOpen(false)}
@@ -472,7 +545,11 @@ export function ProjectListPage() {
                   gap: '0.375rem',
                 }}
               >
-                <span className="material-symbols-outlined" aria-hidden="true" style={{ fontSize: '16px' }}>
+                <span
+                  className="material-symbols-outlined"
+                  aria-hidden="true"
+                  style={{ fontSize: '16px' }}
+                >
                   rocket_launch
                 </span>
                 Create project
@@ -562,10 +639,17 @@ export function ProjectListPage() {
                   fontSize: '0.8125rem',
                   cursor: 'pointer',
                   textTransform: 'capitalize',
-                  boxShadow: filterTab === tab ? '0 1px 2px rgba(15,23,42,0.06)' : 'none',
+                  boxShadow:
+                    filterTab === tab
+                      ? '0 1px 2px rgba(15,23,42,0.06)'
+                      : 'none',
                 }}
               >
-                {tab === 'all' ? `All (${totalProjects})` : tab === 'active' ? `Active (${totalProjects})` : 'Archived (0)'}
+                {tab === 'all'
+                  ? `All (${totalProjects})`
+                  : tab === 'active'
+                    ? `Active (${totalProjects})`
+                    : 'Archived (0)'}
               </button>
             ))}
           </div>
@@ -602,7 +686,13 @@ export function ProjectListPage() {
               gap: '0.75rem',
             }}
           >
-            <span className="material-symbols-outlined" aria-hidden="true" style={{ fontSize: '24px' }}>sync</span>
+            <span
+              className="material-symbols-outlined"
+              aria-hidden="true"
+              style={{ fontSize: '24px' }}
+            >
+              sync
+            </span>
             <p style={{ margin: 0, fontSize: '0.875rem' }}>Loading projects…</p>
           </div>
         ) : null}
@@ -619,7 +709,12 @@ export function ProjectListPage() {
               color: 'var(--color-on-surface-variant)',
             }}
           >
-            <span className="material-symbols-outlined" style={{ fontSize: '40px', color: 'var(--color-error)' }}>error</span>
+            <span
+              className="material-symbols-outlined"
+              style={{ fontSize: '40px', color: 'var(--color-error)' }}
+            >
+              error
+            </span>
             <p style={{ margin: 0, fontSize: '0.875rem' }}>
               Couldn&apos;t load projects.{' '}
               <button
@@ -641,7 +736,11 @@ export function ProjectListPage() {
           </div>
         ) : null}
 
-        {!loading && !failed && sortedProjects.length === 0 && searchQuery === '' && filterTab === 'all' ? (
+        {!loading &&
+        !failed &&
+        sortedProjects.length === 0 &&
+        searchQuery === '' &&
+        filterTab === 'all' ? (
           <div
             style={{
               display: 'flex',
@@ -653,12 +752,20 @@ export function ProjectListPage() {
               color: 'var(--color-on-surface-variant)',
             }}
           >
-            <span className="material-symbols-outlined" style={{ fontSize: '40px' }}>folder_open</span>
+            <span
+              className="material-symbols-outlined"
+              style={{ fontSize: '40px' }}
+            >
+              folder_open
+            </span>
             <p style={{ margin: 0, fontSize: '0.875rem' }}>No projects yet.</p>
           </div>
         ) : null}
 
-        {!loading && !failed && sortedProjects.length === 0 && (searchQuery !== '' || filterTab !== 'all') ? (
+        {!loading &&
+        !failed &&
+        sortedProjects.length === 0 &&
+        (searchQuery !== '' || filterTab !== 'all') ? (
           <div
             style={{
               display: 'flex',
@@ -670,8 +777,15 @@ export function ProjectListPage() {
               color: 'var(--color-on-surface-variant)',
             }}
           >
-            <span className="material-symbols-outlined" style={{ fontSize: '40px' }}>search_off</span>
-            <p style={{ margin: 0, fontSize: '0.875rem' }}>No Matching Projects Found</p>
+            <span
+              className="material-symbols-outlined"
+              style={{ fontSize: '40px' }}
+            >
+              search_off
+            </span>
+            <p style={{ margin: 0, fontSize: '0.875rem' }}>
+              No Matching Projects Found
+            </p>
             <p style={{ margin: 0, fontSize: '0.75rem' }}>
               Try adjusting your search query or filter.
             </p>
@@ -705,8 +819,20 @@ export function ProjectListPage() {
                   }}
                 >
                   {/* Card header */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                      }}
+                    >
                       <span
                         style={{
                           display: 'inline-flex',
@@ -727,7 +853,13 @@ export function ProjectListPage() {
                       >
                         {project.pending ? (
                           <>
-                            <span className="material-symbols-outlined" aria-hidden="true" style={{ fontSize: '12px' }}>sync</span>
+                            <span
+                              className="material-symbols-outlined"
+                              aria-hidden="true"
+                              style={{ fontSize: '12px' }}
+                            >
+                              sync
+                            </span>
                             Saving…
                           </>
                         ) : (
@@ -768,7 +900,13 @@ export function ProjectListPage() {
                           cursor: 'pointer',
                         }}
                       >
-                        <span className="material-symbols-outlined" aria-hidden="true" style={{ fontSize: '16px' }}>more_horiz</span>
+                        <span
+                          className="material-symbols-outlined"
+                          aria-hidden="true"
+                          style={{ fontSize: '16px' }}
+                        >
+                          more_horiz
+                        </span>
                       </button>
                     )}
                   </div>
@@ -784,8 +922,13 @@ export function ProjectListPage() {
                       color: 'var(--color-on-surface)',
                     }}
                   >
-                    {project.pending ? project.name : (
-                      <Link to={`/projects/${project.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                    {project.pending ? (
+                      project.name
+                    ) : (
+                      <Link
+                        to={`/projects/${project.id}`}
+                        style={{ color: 'inherit', textDecoration: 'none' }}
+                      >
                         {project.name}
                       </Link>
                     )}
@@ -818,8 +961,23 @@ export function ProjectListPage() {
                         marginBottom: '0.375rem',
                       }}
                     >
-                      <span style={{ fontSize: '0.75rem', color: 'var(--color-on-surface-variant)' }}>Progress</span>
-                      <span style={{ fontSize: '0.75rem', fontFamily: 'var(--font-family-mono)', color: 'var(--color-on-surface-variant)' }}>0%</span>
+                      <span
+                        style={{
+                          fontSize: '0.75rem',
+                          color: 'var(--color-on-surface-variant)',
+                        }}
+                      >
+                        Progress
+                      </span>
+                      <span
+                        style={{
+                          fontSize: '0.75rem',
+                          fontFamily: 'var(--font-family-mono)',
+                          color: 'var(--color-on-surface-variant)',
+                        }}
+                      >
+                        0%
+                      </span>
                     </div>
                     <div
                       style={{
@@ -841,7 +999,9 @@ export function ProjectListPage() {
                   </div>
 
                   {/* Meta chips */}
-                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <div
+                    style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}
+                  >
                     {[
                       { icon: 'flag', label: '0 Milestones' },
                       { icon: 'article', label: '0 Stories' },
@@ -859,7 +1019,13 @@ export function ProjectListPage() {
                           color: 'var(--color-on-surface-variant)',
                         }}
                       >
-                        <span className="material-symbols-outlined" aria-hidden="true" style={{ fontSize: '12px' }}>{icon}</span>
+                        <span
+                          className="material-symbols-outlined"
+                          aria-hidden="true"
+                          style={{ fontSize: '12px' }}
+                        >
+                          {icon}
+                        </span>
                         {label}
                       </span>
                     ))}
@@ -876,7 +1042,13 @@ export function ProjectListPage() {
                       marginTop: 'auto',
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                      }}
+                    >
                       <div
                         style={{
                           width: '1.25rem',
@@ -894,7 +1066,12 @@ export function ProjectListPage() {
                       >
                         CL
                       </div>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--color-on-surface-variant)' }}>
+                      <span
+                        style={{
+                          fontSize: '0.75rem',
+                          color: 'var(--color-on-surface-variant)',
+                        }}
+                      >
                         Updated {formatDate(project.created_at)}
                       </span>
                     </div>
@@ -913,7 +1090,13 @@ export function ProjectListPage() {
                         }}
                       >
                         Open Board
-                        <span className="material-symbols-outlined" aria-hidden="true" style={{ fontSize: '14px' }}>arrow_forward</span>
+                        <span
+                          className="material-symbols-outlined"
+                          aria-hidden="true"
+                          style={{ fontSize: '14px' }}
+                        >
+                          arrow_forward
+                        </span>
                       </Link>
                     ) : null}
                   </div>
