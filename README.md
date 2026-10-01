@@ -2,7 +2,7 @@
 
 A single-page sprint workspace for a small classmate team. The board, backlog, and sprint history live in one app so the team can plan, run, and close a sprint without switching tools.
 
-The API is a FastAPI service in `hello/`. The UI is a React app in `frontend/`. SQLite is the database (`DATABASE_URL`, default `sqlite:///./data/workspace.db` locally and `sqlite:////data/workspace.db` in Compose). Workspace routes require `Authorization: Bearer <token>` from `POST /auth/register` or `POST /auth/login`. `GET /health` and `GET /version` are public.
+The API is a FastAPI service in `backend/`. The UI is a React app in `frontend/`. SQLite is the database (`DATABASE_URL`, default `sqlite:///./data/workspace.db` locally and `sqlite:////data/workspace.db` in Compose). Workspace routes require `Authorization: Bearer <token>` from `POST /auth/register` or `POST /auth/login`. `GET /health` and `GET /version` are public.
 
 Sprint report drafts call `sprint_report.draft_report`. That package is owned by the data scientist. Faculty notes are an optional string on sprint close; an empty value becomes `No faculty notes recorded` in the draft, and a non-empty value is kept as entered.
 
@@ -19,7 +19,7 @@ The product spec is [`product_specification.md`](product_specification.md). [`Pr
 ├── product_specification.md
 ├── .github/workflows/ci.yml      # test → deploy-staging → deploy-prod
 │
-├── hello/                        # API — Traefik-routed on port 8000
+├── backend/                        # API — Traefik-routed on port 8000
 │   ├── main.py                   # FastAPI app and routes
 │   ├── auth.py                   # password hashing and bearer tokens
 │   ├── dao.py                    # SQL and the migration runner
@@ -37,14 +37,14 @@ The product spec is [`product_specification.md`](product_specification.md). [`Pr
 └── terraform/                    # Coolify project, environments, apps, GitHub secrets
 ```
 
-Compose runs one public service, `hello`, and stores the SQLite file on the `workspace-data` volume. Staging and production each get their own volume. `docker compose down` keeps the data; `docker compose down -v` deletes it.
+Compose runs one public service, `backend`, and stores the SQLite file on the `workspace-data` volume. Staging and production each get their own volume. `docker compose down` keeps the data; `docker compose down -v` deletes it.
 
-Coolify's Traefik routes to the container. The compose file references `${SERVICE_FQDN_HELLO}` so Coolify generates the domain. Locally, `docker-compose.override.yml` publishes port 8000. The API allows the UI origin `http://localhost:43123` through `CORS_ORIGINS`.
+Coolify's Traefik routes to the container. The compose file references `${SERVICE_FQDN_BACKEND}` so Coolify generates the domain. Locally, `docker-compose.override.yml` publishes port 8000. The API allows the UI origin `http://localhost:43123` through `CORS_ORIGINS`.
 
 | Variable | Purpose |
 |---|---|
 | `DATABASE_URL` | SQLite file. Compose sets `sqlite:////data/workspace.db`. |
-| `APP_URL` | `${SERVICE_FQDN_HELLO}` — the reference that triggers Coolify routing |
+| `APP_URL` | `${SERVICE_FQDN_BACKEND}` — the reference that triggers Coolify routing |
 | `CORS_ORIGINS` | Browser origins allowed to call the API. Default `http://localhost:43123` |
 
 ## Run locally
@@ -52,7 +52,7 @@ Coolify's Traefik routes to the container. The compose file references `${SERVIC
 API:
 
 ```bash
-cd hello
+cd backend
 pip install -r requirements.txt
 uvicorn main:app --reload
 ```
@@ -109,12 +109,12 @@ curl -s -X POST $BASE/projects \
 
 Story status is `Backlog`, `Selected for Sprint`, `In Progress`, or `Done`. Priority is `Low`, `Medium`, or `High`. Type is `Feature`, `Bug`, or `Chore`. A project has at most one sprint in `Planned` or `Active`. Closing a sprint stores a snapshot of its stories and the faculty notes used by the report draft.
 
-Coolify polls `GET /health` after a deploy. Bump `APP_VERSION` in `hello/main.py` so a curl of `/health` shows the new build.
+Coolify polls `GET /health` after a deploy. Bump `APP_VERSION` in `backend/main.py` so a curl of `/health` shows the new build.
 
 ## Tests
 
 ```bash
-cd hello
+cd backend
 pip install -r requirements.txt httpx pytest
 pytest tests/ -v
 ```
@@ -164,7 +164,7 @@ terraform apply
 
 ### The one manual step
 
-Coolify's API will not accept per-service domains on a Docker Compose application. For each of the two Applications: **Access → gear icon on "1 configured domain"** (or the **Domains** tab) → under service `hello`, set `http://<your-repo>-staging.ml-capstone.cs.byu.edu` (or the production equivalent) → **Save**. Delete the auto-generated `sslip.io` placeholder and the `www.` variant.
+Coolify's API will not accept per-service domains on a Docker Compose application. For each of the two Applications: **Access → gear icon on "1 configured domain"** (or the **Domains** tab) → under service `backend`, set `http://<your-repo>-staging.ml-capstone.cs.byu.edu` (or the production equivalent) → **Save**. Delete the auto-generated `sslip.io` placeholder and the `www.` variant.
 
 Do this before the first deploy. Traefik bakes routing labels into a container when it starts, so a domain added afterwards returns `404 page not found` until you hit **Redeploy**.
 

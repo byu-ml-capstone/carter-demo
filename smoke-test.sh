@@ -5,7 +5,7 @@
 #
 #   Local (no argument):
 #     ./smoke-test.sh
-#     -> builds + starts the API (hello) with its SQLite volume,
+#     -> builds + starts the API (backend) with its SQLite volume,
 #        waits for /health on localhost:8000, curls the endpoints,
 #        leaves everything running so you can keep poking at it.
 #
@@ -32,11 +32,11 @@ else
 fi
 
 if [ "$MODE" = "local" ]; then
-    # Stub SERVICE_FQDN_HELLO for the compose interpolation in
+    # Stub SERVICE_FQDN_BACKEND for the compose interpolation in
     # docker-compose.yaml. In production Coolify populates this.
-    export SERVICE_FQDN_HELLO="$BASE_URL"
+    export SERVICE_FQDN_BACKEND="$BASE_URL"
 
-    echo "=== local mode: building + starting hello (docker compose) ==="
+    echo "=== local mode: building + starting backend (docker compose) ==="
     docker compose down --remove-orphans >/dev/null 2>&1 || true
     docker compose up -d --build
 else
@@ -77,7 +77,7 @@ echo
 echo
 
 if [ "$MODE" = "local" ]; then
-    echo "hello is running at http://localhost:8000"
+    echo "backend is running at http://localhost:8000"
     echo "SQLite data is on the workspace-data volume and survives docker compose down."
     echo "docker compose down -v deletes that volume."
     echo "Stop everything with: docker compose down"

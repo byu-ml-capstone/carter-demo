@@ -1,10 +1,10 @@
 services:
-  hello:
-    build: ./hello
+  backend:
+    build: ./backend
     expose:
       - "8000"
     environment:
-      - APP_URL=${SERVICE_FQDN_HELLO}
+      - APP_URL=${SERVICE_FQDN_BACKEND}
       - DATABASE_URL=sqlite:////data/workspace.db
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:43123}
     volumes:

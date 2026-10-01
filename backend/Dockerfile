@@ -8,7 +8,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy every top-level Python module. main.py imports auth, dao, db, and domain.
 COPY *.py ./
 
-# Schema migration SQL files. Applied on startup from hello/migrations.
+# Schema migration SQL files. Applied on startup from backend/migrations.
 COPY migrations/ ./migrations/
 
 # Sprint-report package owned by the data scientist. The draft route imports

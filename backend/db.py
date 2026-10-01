@@ -43,7 +43,7 @@ class Database:
             conn.close()
 
     def apply_migrations(self) -> list[str]:
-        """Apply hello/migrations/*.sql in filename order.
+        """Apply backend/migrations/*.sql in filename order.
 
         sqlite3 executescript commits any open transaction, so the migration
         record is written in its own transaction after each script.

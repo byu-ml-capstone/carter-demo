@@ -1,6 +1,6 @@
 import type { AuthResult, SprintReport, ReportFields } from './types'
 
-/** Hello service, host port from docker-compose.override.yml. */
+/** API origin. Host port 8000 comes from docker-compose.override.yml. */
 export const API_ORIGIN = (
   import.meta.env.VITE_API_ORIGIN || 'http://127.0.0.1:8000'
 ).replace(/\/$/, '')
