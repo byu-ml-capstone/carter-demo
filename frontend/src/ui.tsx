@@ -44,48 +44,56 @@ export function safeNext(value: string | null) {
   return value
 }
 
+const TYPE_ICON: Record<StoryType, string> = {
+  Feature: 'new_releases',
+  Bug: 'bug_report',
+  Chore: 'check_box',
+}
+
 export function TypeIcon({ type }: { type: StoryType }) {
-  if (type === 'Feature') {
-    return (
-      <svg
-        className="type-icon feature"
-        viewBox="0 0 16 16"
-        aria-label="Feature"
-      >
-        <path d="M8 1.5 14.5 8 8 14.5 1.5 8Z" />
-      </svg>
-    )
-  }
-  if (type === 'Bug') {
-    return (
-      <svg className="type-icon bug" viewBox="0 0 16 16" aria-label="Bug">
-        <ellipse cx="8" cy="9" rx="3.2" ry="4" />
-        <path d="M8 5.2 V2.2 M6.2 3.2 4.4 1.8 M9.8 3.2 11.6 1.8 M4.6 8 H2 M11.4 8 H14 M5 11.2 3.2 13 M11 11.2 12.8 13 M5.4 6.4 3.4 5.2 M10.6 6.4 12.6 5.2" />
-      </svg>
-    )
-  }
   return (
-    <svg className="type-icon chore" viewBox="0 0 16 16" aria-label="Chore">
-      <rect x="2.5" y="2.5" width="11" height="11" rx="1.5" />
-      <path d="M4.5 8.2 7 10.5 11.5 5.5" />
-    </svg>
+    <span
+      className="material-symbols-outlined text-[var(--color-on-surface-variant)]"
+      style={{ fontSize: '14px' }}
+      aria-label={type}
+    >
+      {TYPE_ICON[type]}
+    </span>
   )
 }
 
 export function BranchIcon() {
   return (
-    <svg className="branch-icon" viewBox="0 0 16 16" aria-hidden="true">
-      <circle cx="4" cy="3.5" r="1.4" />
-      <circle cx="4" cy="12.5" r="1.4" />
-      <circle cx="12" cy="6.5" r="1.4" />
-      <path d="M4 4.9 V11.1 M4 8.2 C4 6.6 12 8.2 12 6.6" />
-    </svg>
+    <span
+      className="material-symbols-outlined text-[var(--color-on-surface-variant)]"
+      style={{ fontSize: '14px' }}
+      aria-hidden="true"
+    >
+      alt_route
+    </span>
   )
+}
+
+const PRIORITY_CLASSES: Record<Priority, string> = {
+  High: 'bg-[var(--color-error-container)] text-[var(--color-on-error-container)]',
+  Medium: 'bg-[var(--color-surface-container-high)] text-[var(--color-on-surface)]',
+  Low: 'bg-[var(--color-surface-container)] text-[var(--color-on-surface-variant)]',
 }
 
 export function PriorityBadge({ priority }: { priority: Priority }) {
   return (
-    <span className={`badge priority-${priority.toLowerCase()}`}>
+    <span
+      className={[
+        'inline-flex items-center px-2 py-0.5 rounded font-semibold',
+        `priority-${priority.toLowerCase()}`,
+        PRIORITY_CLASSES[priority],
+      ].join(' ')}
+      style={{
+        fontFamily: 'var(--font-family-mono)',
+        fontSize: '0.6875rem',
+        lineHeight: '0.9375rem',
+      }}
+    >
       {priority}
     </span>
   )

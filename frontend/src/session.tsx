@@ -48,7 +48,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       toast('Your session ended. Sign in again.')
       const next = `${location.pathname}${location.search}`
       const safe = next.startsWith('/') && !next.startsWith('//') ? next : '/'
-      navigate(`/sign-in?next=${encodeURIComponent(safe)}`, { replace: true })
+      navigate(`/sign-in?next=${encodeURIComponent(safe)}`, { replace: true, flushSync: true })
     })
     return () => setUnauthorizedHandler(null)
   }, [location.pathname, location.search, navigate])
