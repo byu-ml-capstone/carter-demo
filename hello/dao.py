@@ -3,8 +3,7 @@
 import json
 import sqlite3
 import uuid
-from datetime import timedelta
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from auth import hash_password, new_token, verify_password
 from db import Database, now
@@ -71,9 +70,7 @@ class WorkspaceDAO:
         }
 
     def _load_story(self, conn, story_id: str) -> sqlite3.Row:
-        row = conn.execute(
-            "SELECT * FROM user_stories WHERE id = ?", (story_id,)
-        ).fetchone()
+        row = conn.execute("SELECT * FROM user_stories WHERE id = ?", (story_id,)).fetchone()
         if row is None:
             raise AppError(404, "Story not found")
         return row
@@ -87,9 +84,9 @@ class WorkspaceDAO:
         user_id = _id()
         raw, token_hash = new_token()
         created = now()
-        expires = (
-            datetime.now(timezone.utc) + timedelta(days=SESSION_DAYS)
-        ).isoformat(timespec="microseconds")
+        expires = (datetime.now(timezone.utc) + timedelta(days=SESSION_DAYS)).isoformat(
+            timespec="microseconds"
+        )
         try:
             with self.db.connect() as conn:
                 conn.execute(
@@ -116,16 +113,14 @@ class WorkspaceDAO:
     def login(self, email: str, password: str) -> dict:
         cleaned = email.strip().lower()
         with self.db.connect() as conn:
-            row = conn.execute(
-                "SELECT * FROM users WHERE email = ?", (cleaned,)
-            ).fetchone()
+            row = conn.execute("SELECT * FROM users WHERE email = ?", (cleaned,)).fetchone()
             if row is None or not verify_password(password, row["password_hash"]):
                 raise AppError(401, "Email or password is wrong.")
             raw, token_hash = new_token()
             created = now()
-            expires = (
-                datetime.now(timezone.utc) + timedelta(days=SESSION_DAYS)
-            ).isoformat(timespec="microseconds")
+            expires = (datetime.now(timezone.utc) + timedelta(days=SESSION_DAYS)).isoformat(
+                timespec="microseconds"
+            )
             conn.execute(
                 """
                 INSERT INTO sessions (id, user_id, token_hash, created_at, expires_at)
@@ -180,9 +175,7 @@ class WorkspaceDAO:
 
     def list_projects(self) -> list[dict]:
         with self.db.connect() as conn:
-            rows = conn.execute(
-                "SELECT * FROM projects ORDER BY created_at ASC, id ASC"
-            ).fetchall()
+            rows = conn.execute("SELECT * FROM projects ORDER BY created_at ASC, id ASC").fetchall()
         return [
             {
                 "id": row["id"],
@@ -195,9 +188,7 @@ class WorkspaceDAO:
 
     def get_project(self, project_id: str) -> dict:
         with self.db.connect() as conn:
-            row = conn.execute(
-                "SELECT * FROM projects WHERE id = ?", (project_id,)
-            ).fetchone()
+            row = conn.execute("SELECT * FROM projects WHERE id = ?", (project_id,)).fetchone()
         if row is None:
             raise AppError(404, "Project not found")
         return {
@@ -208,9 +199,7 @@ class WorkspaceDAO:
         }
 
     def _require_project(self, conn, project_id: str) -> sqlite3.Row:
-        row = conn.execute(
-            "SELECT * FROM projects WHERE id = ?", (project_id,)
-        ).fetchone()
+        row = conn.execute("SELECT * FROM projects WHERE id = ?", (project_id,)).fetchone()
         if row is None:
             raise AppError(404, "Project not found")
         return row
@@ -263,7 +252,7 @@ class WorkspaceDAO:
             rows = conn.execute(
                 f"""
                 SELECT us.* FROM user_stories us
-                WHERE {' AND '.join(where)}
+                WHERE {" AND ".join(where)}
                 ORDER BY {order}
                 """,
                 params,
@@ -298,18 +287,13 @@ class WorkspaceDAO:
                 """,
                 (story_id, project_id, cleaned, description, priority, type_, created),
             )
-            row = conn.execute(
-                "SELECT * FROM user_stories WHERE id = ?", (story_id,)
-            ).fetchone()
+            row = conn.execute("SELECT * FROM user_stories WHERE id = ?", (story_id,)).fetchone()
             return self._story_dto(conn, row)
 
     def patch_story(self, story_id: str, changes: dict) -> dict:
         with self.db.connect() as conn:
             story = self._load_story(conn, story_id)
-            if (
-                "expected_status" in changes
-                and changes["expected_status"] != story["status"]
-            ):
+            if "expected_status" in changes and changes["expected_status"] != story["status"]:
                 raise AppError(409, ALREADY_MOVED)
             title = story["title"]
             description = story["description"]
@@ -410,9 +394,7 @@ class WorkspaceDAO:
                     """,
                     (sprint_id, project_id, goal, created),
                 )
-                row = conn.execute(
-                    "SELECT * FROM sprints WHERE id = ?", (sprint_id,)
-                ).fetchone()
+                row = conn.execute("SELECT * FROM sprints WHERE id = ?", (sprint_id,)).fetchone()
         except sqlite3.IntegrityError as exc:
             raise AppError(
                 409, "A Planned or Active sprint already exists for this project."
@@ -457,9 +439,7 @@ class WorkspaceDAO:
 
     def get_sprint(self, sprint_id: str) -> dict:
         with self.db.connect() as conn:
-            row = conn.execute(
-                "SELECT * FROM sprints WHERE id = ?", (sprint_id,)
-            ).fetchone()
+            row = conn.execute("SELECT * FROM sprints WHERE id = ?", (sprint_id,)).fetchone()
             if row is None:
                 raise AppError(404, "Sprint not found")
             body = _sprint_public(row)
@@ -481,9 +461,7 @@ class WorkspaceDAO:
 
     def activate_sprint(self, sprint_id: str) -> dict:
         with self.db.connect() as conn:
-            row = conn.execute(
-                "SELECT * FROM sprints WHERE id = ?", (sprint_id,)
-            ).fetchone()
+            row = conn.execute("SELECT * FROM sprints WHERE id = ?", (sprint_id,)).fetchone()
             if row is None:
                 raise AppError(404, "Sprint not found")
             if row["status"] != "Planned":
@@ -497,19 +475,13 @@ class WorkspaceDAO:
             ).fetchone()
             if other is not None:
                 raise AppError(409, "Another sprint is already active.")
-            conn.execute(
-                "UPDATE sprints SET status = 'Active' WHERE id = ?", (sprint_id,)
-            )
-            updated = conn.execute(
-                "SELECT * FROM sprints WHERE id = ?", (sprint_id,)
-            ).fetchone()
+            conn.execute("UPDATE sprints SET status = 'Active' WHERE id = ?", (sprint_id,))
+            updated = conn.execute("SELECT * FROM sprints WHERE id = ?", (sprint_id,)).fetchone()
         return _sprint_public(updated)
 
     def close_sprint(self, sprint_id: str, faculty_notes: str | None) -> dict:
         with self.db.connect() as conn:
-            row = conn.execute(
-                "SELECT * FROM sprints WHERE id = ?", (sprint_id,)
-            ).fetchone()
+            row = conn.execute("SELECT * FROM sprints WHERE id = ?", (sprint_id,)).fetchone()
             if row is None:
                 raise AppError(404, "Sprint not found")
             if row["status"] != "Active":
@@ -555,18 +527,14 @@ class WorkspaceDAO:
                 """,
                 (faculty_notes, sprint_id),
             )
-            updated = conn.execute(
-                "SELECT * FROM sprints WHERE id = ?", (sprint_id,)
-            ).fetchone()
+            updated = conn.execute("SELECT * FROM sprints WHERE id = ?", (sprint_id,)).fetchone()
             body = _sprint_public(updated)
             body["stories_snapshot"] = self._snapshot(conn, sprint_id)
         return body
 
     def report_snapshot(self, sprint_id: str) -> dict:
         with self.db.connect() as conn:
-            row = conn.execute(
-                "SELECT * FROM sprints WHERE id = ?", (sprint_id,)
-            ).fetchone()
+            row = conn.execute("SELECT * FROM sprints WHERE id = ?", (sprint_id,)).fetchone()
             if row is None:
                 raise AppError(404, "Sprint not found")
             if row["status"] != "Closed":
@@ -581,9 +549,7 @@ class WorkspaceDAO:
             "sprint_goal": row["goal"],
             "faculty_notes": row["faculty_notes"],
             "story_count": len(stories),
-            "any_completed": any(
-                story["status_at_close"] == "Done" for story in stories
-            ),
+            "any_completed": any(story["status_at_close"] == "Done" for story in stories),
             "stories": [
                 {
                     "id": story["story_id"],
@@ -623,9 +589,7 @@ class WorkspaceDAO:
                     (payload, generated_at, sprint_id),
                 )
 
-    def save_final(
-        self, sprint_id: str, final: dict, reviewed_by: str | None
-    ) -> dict:
+    def save_final(self, sprint_id: str, final: dict, reviewed_by: str | None) -> dict:
         with self.db.connect() as conn:
             row = conn.execute(
                 "SELECT * FROM sprint_reports WHERE sprint_id = ?", (sprint_id,)
@@ -648,9 +612,7 @@ class WorkspaceDAO:
 
     def get_report(self, sprint_id: str) -> dict:
         with self.db.connect() as conn:
-            sprint = conn.execute(
-                "SELECT id FROM sprints WHERE id = ?", (sprint_id,)
-            ).fetchone()
+            sprint = conn.execute("SELECT id FROM sprints WHERE id = ?", (sprint_id,)).fetchone()
             if sprint is None:
                 raise AppError(404, "Sprint not found")
             row = conn.execute(
@@ -693,9 +655,7 @@ class WorkspaceDAO:
             ).fetchall()
         return [{"id": row["id"], "name": row["name"]} for row in rows]
 
-    def add_comment(
-        self, parent_type: str, parent_id: str, author_id: str, body: str
-    ) -> dict:
+    def add_comment(self, parent_type: str, parent_id: str, author_id: str, body: str) -> dict:
         if not isinstance(body, str) or body.strip() == "":
             raise AppError(400, "Comment body is required.")
         with self.db.connect() as conn:
@@ -772,9 +732,7 @@ class WorkspaceDAO:
             if row is None:
                 raise AppError(404, "Story not found")
             return row["project_id"]
-        row = conn.execute(
-            "SELECT project_id FROM sprints WHERE id = ?", (parent_id,)
-        ).fetchone()
+        row = conn.execute("SELECT project_id FROM sprints WHERE id = ?", (parent_id,)).fetchone()
         if row is None:
             raise AppError(404, "Sprint not found")
         return row["project_id"]

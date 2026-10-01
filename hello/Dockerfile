@@ -5,8 +5,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy every top-level Python module — main.py imports from greetings.py,
-# and as students add more modules the glob picks them up automatically.
+# Copy every top-level Python module. main.py imports auth, dao, db, and domain.
 COPY *.py ./
 
 # Schema migration SQL files. Applied on startup from hello/migrations.

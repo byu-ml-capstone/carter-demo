@@ -5,7 +5,7 @@
 #
 #   Local (no argument):
 #     ./smoke-test.sh
-#     -> builds + starts the full compose stack (hello + time + db),
+#     -> builds + starts the API (hello) with its SQLite volume,
 #        waits for /health on localhost:8000, curls the endpoints,
 #        leaves everything running so you can keep poking at it.
 #

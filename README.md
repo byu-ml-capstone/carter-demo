@@ -25,7 +25,6 @@ The product spec is [`product_specification.md`](product_specification.md). [`Pr
 │   ├── dao.py                    # SQL and the migration runner
 │   ├── db.py
 │   ├── domain.py                 # status, priority, type, and report rules
-│   ├── greetings.py              # APP_VERSION (Coolify health check)
 │   ├── migrations/001_workspace.sql
 │   ├── sprint_report/            # draft_report for sprint close
 │   ├── requirements.txt
@@ -35,7 +34,6 @@ The product spec is [`product_specification.md`](product_specification.md). [`Pr
 ├── frontend/                     # React + TypeScript + Vite, dev server on port 43123
 │   └── src/                      # sign-in, project list, board, ticket modal, sprint report
 │
-├── time/                         # unused starter sidecar; not started by Compose
 └── terraform/                    # Coolify project, environments, apps, GitHub secrets
 ```
 
@@ -111,7 +109,7 @@ curl -s -X POST $BASE/projects \
 
 Story status is `Backlog`, `Selected for Sprint`, `In Progress`, or `Done`. Priority is `Low`, `Medium`, or `High`. Type is `Feature`, `Bug`, or `Chore`. A project has at most one sprint in `Planned` or `Active`. Closing a sprint stores a snapshot of its stories and the faculty notes used by the report draft.
 
-Coolify polls `GET /health` after a deploy. Bump `APP_VERSION` in `hello/greetings.py` so a curl of `/health` shows the new build.
+Coolify polls `GET /health` after a deploy. Bump `APP_VERSION` in `hello/main.py` so a curl of `/health` shows the new build.
 
 ## Tests
 

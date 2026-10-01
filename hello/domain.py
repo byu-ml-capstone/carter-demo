@@ -3,7 +3,6 @@
 STATUSES = ("Backlog", "Selected for Sprint", "In Progress", "Done")
 PRIORITIES = ("Low", "Medium", "High")
 TYPES = ("Feature", "Bug", "Chore")
-SPRINT_STATUSES = ("Planned", "Active", "Closed")
 REPORT_KEYS = (
     "sprint_goal",
     "completed_work",
@@ -16,9 +15,7 @@ NO_ACTIVE = "No active sprint — create or activate one before adding stories."
 ALREADY_MOVED = "This story was already moved."
 NOTHING_COMPLETED = "No stories were completed this sprint"
 NO_FACULTY_NOTES = "No faculty notes recorded"
-EMPTY_SPRINT_REPORT = "This sprint had no stories, so there's nothing to report"
 SIGN_IN_REQUIRED = "Sign in required."
-BAD_LOGIN = "Email or password is wrong."
 
 
 class AppError(Exception):

@@ -26,7 +26,7 @@ function RequireAuth() {
   return <Outlet />
 }
 
-const router = createBrowserRouter([
+export const routes = [
   {
     element: <Root />,
     children: [
@@ -42,7 +42,9 @@ const router = createBrowserRouter([
       },
     ],
   },
-])
+]
+
+const router = createBrowserRouter(routes)
 
 export default function App() {
   return <RouterProvider router={router} />

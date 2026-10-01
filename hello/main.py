@@ -23,7 +23,8 @@ from domain import (
     faculty_notes_for_report,
     normalize_faculty_notes,
 )
-from greetings import APP_VERSION
+
+APP_VERSION = "0.2.0"
 
 log = logging.getLogger("workspace")
 if not log.handlers:
@@ -102,9 +103,7 @@ def validation_error(_request: Request, exc: RequestValidationError):
     for err in exc.errors():
         loc = ".".join(str(item) for item in err["loc"] if item != "body")
         parts.append(f"{loc}: {err['msg']}" if loc else err["msg"])
-    return JSONResponse(
-        status_code=400, content={"detail": "; ".join(parts) or "Invalid request"}
-    )
+    return JSONResponse(status_code=400, content={"detail": "; ".join(parts) or "Invalid request"})
 
 
 def require_user(authorization: str | None = Header(default=None)) -> dict:
@@ -243,9 +242,7 @@ def list_stories(
 
 @app.post("/projects/{project_id}/stories", status_code=201)
 def create_story(project_id: str, body: StoryIn, _user: dict = Depends(require_user)):
-    return dao.create_story(
-        project_id, body.title, body.description, body.priority, body.type
-    )
+    return dao.create_story(project_id, body.title, body.description, body.priority, body.type)
 
 
 @app.patch("/stories/{story_id}")
@@ -338,9 +335,7 @@ def _final_content(payload: dict) -> dict:
 
 
 @app.put("/sprints/{sprint_id}/report")
-def save_sprint_report(
-    sprint_id: str, body: ReportIn, _user: dict = Depends(require_user)
-):
+def save_sprint_report(sprint_id: str, body: ReportIn, _user: dict = Depends(require_user)):
     return dao.save_final(sprint_id, _final_content(body.final_content), body.reviewed_by)
 
 
@@ -360,9 +355,7 @@ def list_members(project_id: str, _user: dict = Depends(require_user)):
 
 
 @app.post("/stories/{story_id}/comments", status_code=201)
-def add_story_comment(
-    story_id: str, body: CommentIn, _user: dict = Depends(require_user)
-):
+def add_story_comment(story_id: str, body: CommentIn, _user: dict = Depends(require_user)):
     return dao.add_comment("Story", story_id, body.author_id, body.body)
 
 
@@ -372,9 +365,7 @@ def list_story_comments(story_id: str, _user: dict = Depends(require_user)):
 
 
 @app.post("/sprints/{sprint_id}/comments", status_code=201)
-def add_sprint_comment(
-    sprint_id: str, body: CommentIn, _user: dict = Depends(require_user)
-):
+def add_sprint_comment(sprint_id: str, body: CommentIn, _user: dict = Depends(require_user)):
     return dao.add_comment("Sprint", sprint_id, body.author_id, body.body)
 
 

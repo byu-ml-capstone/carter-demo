@@ -6,4 +6,5 @@ venv/
 .env
 .DS_Store
 *.db
+.coverage
 data/

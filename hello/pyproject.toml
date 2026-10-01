@@ -1,0 +1,24 @@
+[tool.ruff]
+line-length = 100
+extend-exclude = ["sprint_report"]
+
+[tool.ruff.lint]
+# FastAPI declares dependencies with Depends() in argument defaults.
+# Startup and the draft route catch Exception so one failure cannot take down the process.
+ignore = ["B008", "BLE001"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["main", "dao", "domain", "auth", "db", "sprint_report"]
+omit = [
+    "tests/*",
+    "*/test_*.py",
+    "sprint_report/test_sprint_report.py",
+]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 100
+skip_empty = true
