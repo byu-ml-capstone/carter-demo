@@ -152,36 +152,6 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
                 <LogoSVG className="w-full h-full" />
               </div>
 
-              {/* ENV pill */}
-              <div
-                className="flex items-center"
-                style={{
-                  gap: '0.375rem',
-                  padding: '0.25rem 0.625rem',
-                  background: 'var(--color-surface-container-low)',
-                  borderRadius: '9999px',
-                }}
-              >
-                <span
-                  className="rounded-full"
-                  style={{
-                    width: '0.375rem',
-                    height: '0.375rem',
-                    background: 'var(--color-secondary)',
-                    animation: 'pulse 2s cubic-bezier(0.4,0,0.6,1) infinite',
-                  }}
-                />
-                <span
-                  className="tracking-wider uppercase"
-                  style={{
-                    fontFamily: 'var(--font-family-mono)',
-                    fontSize: '0.6875rem',
-                    color: 'var(--color-on-surface-variant)',
-                  }}
-                >
-                  ENV // CS-482
-                </span>
-              </div>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
@@ -197,19 +167,6 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
               >
                 My Workspace
               </h1>
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: '0.8125rem',
-                  lineHeight: '1.25rem',
-                  color: 'var(--color-on-surface-variant)',
-                }}
-              >
-                CS 482 Data Science Capstone by{' '}
-                <span style={{ color: 'var(--color-on-surface)', fontWeight: 500 }}>
-                  Carter Lee
-                </span>
-              </p>
             </div>
           </div>
 
@@ -571,7 +528,7 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
                   color: 'var(--color-outline)',
                 }}
               >
-                v2.4.19-RELEASE
+                v1-RELEASE
               </span>
             </div>
             <p
