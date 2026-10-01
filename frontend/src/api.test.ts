@@ -32,11 +32,14 @@ describe('api', () => {
     setUnauthorizedHandler(onUnauthorized)
     setToken('token-1')
     mockFetch((call) => {
-      if (call.url.endsWith('/auth/login')) return { json: { token: 'next', user: { id: 'u' } } }
+      if (call.url.endsWith('/auth/login'))
+        return { json: { token: 'next', user: { id: 'u' } } }
       return { status: 401, json: { detail: 'Sign in required.' } }
     })
     await login('ada@example.com', 'password1')
-    await expect(register('ada@example.com', 'password1')).rejects.toMatchObject({ status: 401 })
+    await expect(
+      register('ada@example.com', 'password1'),
+    ).rejects.toMatchObject({ status: 401 })
     expect(onUnauthorized).not.toHaveBeenCalled()
   })
 
@@ -45,7 +48,10 @@ describe('api', () => {
     setUnauthorizedHandler(onUnauthorized)
     setToken('token-1')
     mockFetch(() => ({ status: 401, json: {} }))
-    await expect(api('/projects')).rejects.toMatchObject({ status: 401, detail: 'Sign in required.' })
+    await expect(api('/projects')).rejects.toMatchObject({
+      status: 401,
+      detail: 'Sign in required.',
+    })
     await expect(api('/projects')).rejects.toBeInstanceOf(ApiError)
     expect(onUnauthorized).toHaveBeenCalledTimes(1)
     setToken('token-2')
@@ -55,10 +61,15 @@ describe('api', () => {
 
   it('maps network, empty, and invalid bodies', async () => {
     mockFetch(() => ({ network: true }))
-    await expect(api('/projects')).rejects.toMatchObject({ status: 0, detail: 'network' })
+    await expect(api('/projects')).rejects.toMatchObject({
+      status: 0,
+      detail: 'network',
+    })
 
     mockFetch(() => ({ status: 204 }))
-    await expect(api('/auth/logout', { method: 'POST' })).resolves.toBeUndefined()
+    await expect(
+      api('/auth/logout', { method: 'POST' }),
+    ).resolves.toBeUndefined()
 
     mockFetch(() => ({ text: '' }))
     await expect(api('/projects')).resolves.toBeNull()
@@ -67,13 +78,19 @@ describe('api', () => {
     await expect(api('/projects')).resolves.toBeNull()
 
     mockFetch(() => ({ status: 500, json: { detail: '  ' } }))
-    await expect(api('/projects')).rejects.toMatchObject({ detail: 'Request failed' })
+    await expect(api('/projects')).rejects.toMatchObject({
+      detail: 'Request failed',
+    })
 
     mockFetch(() => ({ status: 400, json: { detail: 12 } }))
-    await expect(api('/projects')).rejects.toMatchObject({ detail: 'Request failed' })
+    await expect(api('/projects')).rejects.toMatchObject({
+      detail: 'Request failed',
+    })
 
     mockFetch(() => ({ status: 400, json: { detail: 'Name is required.' } }))
-    await expect(api('/projects', { method: 'POST', body: { name: 'A' } })).rejects.toMatchObject({
+    await expect(
+      api('/projects', { method: 'POST', body: { name: 'A' } }),
+    ).rejects.toMatchObject({
       detail: 'Name is required.',
     })
   })
@@ -95,7 +112,9 @@ describe('api', () => {
         faculty_notes: '',
       },
     })
-    expect(normalizeReport({ draft_content: 'nope' as never, final_content: null })).toEqual({
+    expect(
+      normalizeReport({ draft_content: 'nope' as never, final_content: null }),
+    ).toEqual({
       draft_content: null,
       final_content: null,
     })

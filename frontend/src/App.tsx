@@ -1,4 +1,10 @@
-import { Navigate, Outlet, RouterProvider, createBrowserRouter, useLocation } from 'react-router-dom'
+import {
+  Navigate,
+  Outlet,
+  RouterProvider,
+  createBrowserRouter,
+  useLocation,
+} from 'react-router-dom'
 import { AuthPage } from './AuthPage'
 import { ProjectListPage } from './ProjectListPage'
 import { ReportPage } from './ReportPage'

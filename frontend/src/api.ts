@@ -52,7 +52,8 @@ type Options = {
 
 export async function api<T>(path: string, options: Options = {}): Promise<T> {
   const headers = new Headers()
-  if (options.body !== undefined) headers.set('Content-Type', 'application/json')
+  if (options.body !== undefined)
+    headers.set('Content-Type', 'application/json')
   if (token && options.auth !== 'none') {
     headers.set('Authorization', `Bearer ${token}`)
   }
@@ -62,7 +63,8 @@ export async function api<T>(path: string, options: Options = {}): Promise<T> {
     response = await fetch(`${API_ORIGIN}${path}`, {
       method: options.method ?? 'GET',
       headers,
-      body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+      body:
+        options.body !== undefined ? JSON.stringify(options.body) : undefined,
     })
   } catch {
     throw new ApiError(0, 'network')
@@ -125,7 +127,8 @@ export function logout() {
 function asFields(value: unknown): ReportFields | null {
   if (!value || typeof value !== 'object') return null
   const record = value as Record<string, unknown>
-  const text = (key: string) => (typeof record[key] === 'string' ? record[key] : '')
+  const text = (key: string) =>
+    typeof record[key] === 'string' ? record[key] : ''
   return {
     sprint_goal: text('sprint_goal'),
     completed_work: text('completed_work'),

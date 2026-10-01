@@ -1,6 +1,15 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { BranchIcon, PriorityBadge, TypeIcon, formatDate, formatWhen, priorityRank, safeNext, sprintLabel } from './ui'
+import {
+  BranchIcon,
+  PriorityBadge,
+  TypeIcon,
+  formatDate,
+  formatWhen,
+  priorityRank,
+  safeNext,
+  sprintLabel,
+} from './ui'
 
 describe('ui', () => {
   it('ranks priorities and formats dates', () => {

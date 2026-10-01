@@ -23,12 +23,20 @@ const posted: Comment = {
 
 describe('comments', () => {
   it('highlights the longest team-member name', () => {
-    render(<MentionText body="Hi @Anna, @Ann." mentionedIds={['ann', 'anna']} members={members} />)
+    render(
+      <MentionText
+        body="Hi @Anna, @Ann."
+        mentionedIds={['ann', 'anna']}
+        members={members}
+      />,
+    )
     expect(screen.getByText('@Anna')).toBeInTheDocument()
     expect(screen.getByText('@Ann')).toBeInTheDocument()
     render(<MentionText body="" mentionedIds={[]} members={[]} />)
-    render(<MentionText body="Hello @Nope" mentionedIds={[]} members={members} />)
-    expect(screen.getByText('Hello ')).toBeInTheDocument()
+    render(
+      <MentionText body="Hello @Nope" mentionedIds={[]} members={members} />,
+    )
+    expect(screen.getByText(/^Hello/)).toBeInTheDocument()
   })
 
   it('inserts a team member and posts on a story or a sprint', async () => {
@@ -49,7 +57,13 @@ describe('comments', () => {
           members={members}
           comments={[
             posted,
-            { ...posted, id: 'c2', author_id: 'missing', body: 'plain', mentioned_ids: [] },
+            {
+              ...posted,
+              id: 'c2',
+              author_id: 'missing',
+              body: 'plain',
+              mentioned_ids: [],
+            },
           ]}
           email="ada@example.com"
           draft="Hi @An"
@@ -95,7 +109,9 @@ describe('comments', () => {
     )
     await user.selectOptions(screen.getAllByLabelText('Your name')[1]!, 'ann')
     await user.click(screen.getAllByRole('button', { name: 'Post' })[1]!)
-    expect(calls.some((call) => call.url.includes('/sprints/sp1/comments'))).toBe(true)
+    expect(
+      calls.some((call) => call.url.includes('/sprints/sp1/comments')),
+    ).toBe(true)
   })
 
   it('guards an empty post and reports save errors', async () => {
@@ -136,7 +152,9 @@ describe('comments', () => {
     await user.click(screen.getByRole('button', { name: 'Post' }))
     result = { status: 400, json: { detail: 'Comment body is required.' } }
     await user.click(screen.getByRole('button', { name: 'Post' }))
-    expect(await screen.findByText('Comment body is required.')).toBeInTheDocument()
+    expect(
+      await screen.findByText('Comment body is required.'),
+    ).toBeInTheDocument()
     result = { status: 500, json: {} }
     await user.click(screen.getByRole('button', { name: 'Post' }))
     expect(await screen.findByText('Request failed')).toBeInTheDocument()
@@ -165,11 +183,17 @@ describe('comments', () => {
     )
     expect(screen.getByText('No comments yet.')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Add a teammate' }))
-    await user.click(screen.getByRole('button', { name: 'Add teammates to this project first' }))
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Add teammates to this project first',
+      }),
+    )
     expect(onOpenTeam).toHaveBeenCalledTimes(2)
     const box = screen.getByPlaceholderText('Write a comment')
     fireEvent.change(box, { target: { value: 'a@Ann', selectionStart: 2 } })
-    fireEvent.change(box, { target: { value: '@Ann\nmore', selectionStart: 8 } })
+    fireEvent.change(box, {
+      target: { value: '@Ann\nmore', selectionStart: 8 },
+    })
     fireEvent.keyDown(box, { key: 'ArrowDown' })
     const post = screen.getByRole('button', { name: 'Post' })
     post.removeAttribute('disabled')

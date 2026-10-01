@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { routes } from './App'
 import { getToken, setToken } from './api'
 import { setReportDirty } from './reportGuard'
-import { AccountBar, SessionProvider, useSession } from './session'
+import { AccountBar, SessionProvider } from './session'
 import { mockFetch, pathOf } from './test/fetch'
 import { signedInUser } from './test/login'
 
@@ -37,9 +37,13 @@ describe('session', () => {
     const user = userEvent.setup({ delay: null })
     const calls = mockFetch((call) => {
       const path = pathOf(call.url)
-      if (path === '/auth/login') return { json: { token: 'token-1', user: signedInUser } }
+      if (path === '/auth/login')
+        return { json: { token: 'token-1', user: signedInUser } }
       if (path === '/auth/logout') {
-        if (calls.filter((item) => pathOf(item.url) === '/auth/logout').length === 1) {
+        if (
+          calls.filter((item) => pathOf(item.url) === '/auth/logout').length ===
+          1
+        ) {
           return { network: true }
         }
         return { status: 204 }
@@ -58,18 +62,24 @@ describe('session', () => {
     await user.type(screen.getByLabelText('Email'), 'ada@example.com')
     await user.type(screen.getByLabelText('Password'), 'password1')
     await user.click(screen.getByRole('button', { name: 'Sign in' }))
-    expect(await screen.findByRole('heading', { name: 'Projects' })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { name: 'Projects' }),
+    ).toBeInTheDocument()
     expect(getToken()).toBe('token-1')
 
     setReportDirty(true)
     vi.spyOn(window, 'confirm').mockReturnValueOnce(false)
     await user.click(screen.getByRole('button', { name: 'Sign out' }))
-    expect(screen.getByRole('heading', { name: 'Projects' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: 'Projects' }),
+    ).toBeInTheDocument()
 
     vi.spyOn(window, 'confirm').mockReturnValueOnce(true)
     localStorage.setItem('my-workspace:author:p1', 'ann')
     await user.click(screen.getByRole('button', { name: 'Sign out' }))
-    expect(await screen.findByRole('heading', { name: 'My Workspace' })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { name: 'My Workspace' }),
+    ).toBeInTheDocument()
     expect(getToken()).toBeNull()
     expect(localStorage.getItem('my-workspace:author:p1')).toBeNull()
 
@@ -79,18 +89,25 @@ describe('session', () => {
     await screen.findByRole('heading', { name: 'Projects' })
     setToken(null)
     await user.click(screen.getByRole('button', { name: 'Sign out' }))
-    expect(await screen.findByRole('button', { name: 'Sign in' })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('button', { name: 'Sign in' }),
+    ).toBeInTheDocument()
 
     await user.type(screen.getByLabelText('Email'), 'ada@example.com')
     await user.type(screen.getByLabelText('Password'), 'password1')
     mockFetch((call) => {
-      if (pathOf(call.url) === '/auth/login') return { json: { token: 'expired', user: signedInUser } }
+      if (pathOf(call.url) === '/auth/login')
+        return { json: { token: 'expired', user: signedInUser } }
       setReportDirty(true)
       return { status: 401, json: { detail: 'Sign in required.' } }
     })
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => undefined)
+    const alertSpy = vi
+      .spyOn(window, 'alert')
+      .mockImplementation(() => undefined)
     await user.click(screen.getByRole('button', { name: 'Sign in' }))
-    expect(await screen.findByText('Your session ended. Sign in again.')).toBeInTheDocument()
+    expect(
+      await screen.findByText('Your session ended. Sign in again.'),
+    ).toBeInTheDocument()
     expect(alertSpy).toHaveBeenCalled()
     expect(screen.getByLabelText('Email')).toBeInTheDocument()
   })

@@ -28,7 +28,10 @@ export function formatWhen(iso: string) {
   }).format(date)
 }
 
-export function sprintLabel(status: 'Planned' | 'Active' | 'Closed', goal: string | null) {
+export function sprintLabel(
+  status: 'Planned' | 'Active' | 'Closed',
+  goal: string | null,
+) {
   const text = goal?.trim()
   if (text) return text
   if (status === 'Planned') return 'Planned sprint'
@@ -44,7 +47,11 @@ export function safeNext(value: string | null) {
 export function TypeIcon({ type }: { type: StoryType }) {
   if (type === 'Feature') {
     return (
-      <svg className="type-icon feature" viewBox="0 0 16 16" aria-label="Feature">
+      <svg
+        className="type-icon feature"
+        viewBox="0 0 16 16"
+        aria-label="Feature"
+      >
         <path d="M8 1.5 14.5 8 8 14.5 1.5 8Z" />
       </svg>
     )
@@ -77,5 +84,9 @@ export function BranchIcon() {
 }
 
 export function PriorityBadge({ priority }: { priority: Priority }) {
-  return <span className={`badge priority-${priority.toLowerCase()}`}>{priority}</span>
+  return (
+    <span className={`badge priority-${priority.toLowerCase()}`}>
+      {priority}
+    </span>
+  )
 }

@@ -42,7 +42,9 @@ export function CommentThread({
     if (known) setAuthorId(stored)
   }, [known, stored])
 
-  const selectable = members.filter((member) => member.name.trim().toLowerCase() !== emailKey)
+  const selectable = members.filter(
+    (member) => member.name.trim().toLowerCase() !== emailKey,
+  )
   const mention = mentionQuery(draft, caret)
 
   const matches = mention
@@ -86,7 +88,11 @@ export function CommentThread({
       onDraft('')
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) return
-      toast(error instanceof ApiError && error.detail ? error.detail : "Couldn't save that — try again.")
+      toast(
+        error instanceof ApiError && error.detail
+          ? error.detail
+          : "Couldn't save that — try again.",
+      )
     } finally {
       setPosting(false)
     }
@@ -98,12 +104,16 @@ export function CommentThread({
       {comments.length === 0 ? <p className="hint">No comments yet.</p> : null}
       <ol className="comments">
         {comments.map((comment) => {
-          const author = members.find((member) => member.id === comment.author_id)
+          const author = members.find(
+            (member) => member.id === comment.author_id,
+          )
           return (
             <li key={comment.id}>
               <div className="comment-meta">
                 <strong>{author?.name ?? 'Unknown'}</strong>
-                <time dateTime={comment.created_at}>{formatWhen(comment.created_at)}</time>
+                <time dateTime={comment.created_at}>
+                  {formatWhen(comment.created_at)}
+                </time>
               </div>
               <p>
                 <MentionText
@@ -126,7 +136,10 @@ export function CommentThread({
       ) : (
         <label className="author-picker">
           Your name
-          <select value={authorId} onChange={(event) => chooseAuthor(event.target.value)}>
+          <select
+            value={authorId}
+            onChange={(event) => chooseAuthor(event.target.value)}
+          >
             <option value="">Choose your name</option>
             {selectable.map((member) => (
               <option key={member.id} value={member.id}>
@@ -146,7 +159,9 @@ export function CommentThread({
             setCaret(event.target.selectionStart ?? event.target.value.length)
             setActiveIndex(0)
           }}
-          onSelect={(event) => setCaret(event.currentTarget.selectionStart ?? 0)}
+          onSelect={(event) =>
+            setCaret(event.currentTarget.selectionStart ?? 0)
+          }
           onKeyDown={(event) => {
             if (!mention || matches.length === 0) return
             if (event.key === 'ArrowDown') {
@@ -154,7 +169,9 @@ export function CommentThread({
               setActiveIndex((index) => (index + 1) % matches.length)
             } else if (event.key === 'ArrowUp') {
               event.preventDefault()
-              setActiveIndex((index) => (index - 1 + matches.length) % matches.length)
+              setActiveIndex(
+                (index) => (index - 1 + matches.length) % matches.length,
+              )
             } else if (event.key === 'Enter' && !event.shiftKey) {
               event.preventDefault()
               insertMention(matches[activeIndex]?.name ?? matches[0].name)
@@ -186,7 +203,11 @@ export function CommentThread({
             ))}
           </ul>
         ) : null}
-        <button type="button" disabled={!authorId || !draft.trim() || posting} onClick={() => void post()}>
+        <button
+          type="button"
+          disabled={!authorId || !draft.trim() || posting}
+          onClick={() => void post()}
+        >
           {posting ? 'Posting…' : 'Post'}
         </button>
       </div>

@@ -8,7 +8,12 @@ import {
 } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { getToken, logout, setToken, setUnauthorizedHandler } from './api'
-import { clearAuthorKeys, isReportDirty, setReportDirty, suppressLeaveGuard } from './reportGuard'
+import {
+  clearAuthorKeys,
+  isReportDirty,
+  setReportDirty,
+  suppressLeaveGuard,
+} from './reportGuard'
 import type { User } from './types'
 import { toast } from './toast'
 
@@ -78,7 +83,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [navigate, session],
   )
 
-  return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>
+  return (
+    <SessionContext.Provider value={value}>{children}</SessionContext.Provider>
+  )
 }
 
 export function useSession() {

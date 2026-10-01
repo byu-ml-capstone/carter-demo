@@ -2,7 +2,14 @@ import { useEffect, useRef, useState } from 'react'
 import { api, ApiError } from './api'
 import { CommentThread } from './comments'
 import { toast } from './toast'
-import type { Comment, Member, Priority, Status, Story, StoryType } from './types'
+import type {
+  Comment,
+  Member,
+  Priority,
+  Status,
+  Story,
+  StoryType,
+} from './types'
 import { PRIORITIES, STATUSES, STORY_TYPES } from './types'
 import { PriorityBadge, TypeIcon } from './ui'
 
@@ -64,7 +71,10 @@ export function TicketModal({
 
   async function save(patch: Record<string, string | null>) {
     try {
-      const updated = await api<Story>(`/stories/${story.id}`, { method: 'PATCH', body: patch })
+      const updated = await api<Story>(`/stories/${story.id}`, {
+        method: 'PATCH',
+        body: patch,
+      })
       onStory(updated)
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) return
@@ -114,7 +124,12 @@ export function TicketModal({
           }}
         />
         <PriorityBadge priority={story.priority} />
-        <button type="button" className="icon-button" aria-label="Close" onClick={onClose}>
+        <button
+          type="button"
+          className="icon-button"
+          aria-label="Close"
+          onClick={onClose}
+        >
           ×
         </button>
       </header>

@@ -21,7 +21,8 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
   }, [mode, navigate, next, session])
 
   const emailOk = email.trim().length > 0
-  const passwordOk = mode === 'login' ? password.trim().length > 0 : password.length >= 8
+  const passwordOk =
+    mode === 'login' ? password.trim().length > 0 : password.length >= 8
   const confirmOk = mode === 'login' || confirm === password
   const canSubmit = emailOk && passwordOk && confirmOk && !busy
 
@@ -46,9 +47,17 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
       } else if (caught instanceof ApiError && caught.status === 400) {
         setError(caught.detail)
       } else if (caught instanceof ApiError && caught.status === 0) {
-        setError(mode === 'login' ? "Couldn't sign in — try again." : "Couldn't create the account — try again.")
+        setError(
+          mode === 'login'
+            ? "Couldn't sign in — try again."
+            : "Couldn't create the account — try again.",
+        )
       } else {
-        setError(mode === 'login' ? "Couldn't sign in — try again." : "Couldn't create the account — try again.")
+        setError(
+          mode === 'login'
+            ? "Couldn't sign in — try again."
+            : "Couldn't create the account — try again.",
+        )
       }
     } finally {
       setBusy(false)
@@ -72,7 +81,9 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
           Password
           <input
             type="password"
-            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+            autoComplete={
+              mode === 'login' ? 'current-password' : 'new-password'
+            }
             value={password}
             onChange={(event) => setPassword(event.target.value)}
           />

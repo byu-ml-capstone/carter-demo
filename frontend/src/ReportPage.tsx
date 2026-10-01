@@ -11,7 +11,14 @@ import {
 import { AccountBar, useSession } from './session'
 import { TeamDialog } from './WorkspacePage'
 import { toast } from './toast'
-import type { Comment, Member, ReportFields, ReportKey, Sprint, SprintReport } from './types'
+import type {
+  Comment,
+  Member,
+  ReportFields,
+  ReportKey,
+  Sprint,
+  SprintReport,
+} from './types'
 import {
   EMPTY_REPORT,
   EMPTY_SPRINT_DETAIL,
@@ -32,8 +39,12 @@ function prepareFields(fields: ReportFields, doneCount: number): ReportFields {
     ...fields,
     blockers: fields.blockers.trim() ? fields.blockers : NO_BLOCKERS,
     completed_work:
-      fields.completed_work.trim() || doneCount > 0 ? fields.completed_work : NONE_COMPLETED,
-    faculty_notes: fields.faculty_notes.trim() ? fields.faculty_notes : NO_FACULTY_NOTES,
+      fields.completed_work.trim() || doneCount > 0
+        ? fields.completed_work
+        : NONE_COMPLETED,
+    faculty_notes: fields.faculty_notes.trim()
+      ? fields.faculty_notes
+      : NO_FACULTY_NOTES,
   }
 }
 
@@ -48,7 +59,13 @@ export function ReportPage() {
   const [baseline, setBaseline] = useState<ReportFields>(EMPTY_REPORT())
   const [savedFinal, setSavedFinal] = useState<ReportFields | null>(null)
   const [mode, setMode] = useState<
-    'loading' | 'not-closed' | 'empty' | 'drafting' | 'error' | 'editing' | 'readonly'
+    | 'loading'
+    | 'not-closed'
+    | 'empty'
+    | 'drafting'
+    | 'error'
+    | 'editing'
+    | 'readonly'
   >('loading')
   const [saving, setSaving] = useState(false)
   const [teamOpen, setTeamOpen] = useState(false)
@@ -69,7 +86,9 @@ export function ReportPage() {
 
   useEffect(() => {
     if (blocker.state !== 'blocked') return
-    if (window.confirm('You have unsaved changes to this report — leave anyway?')) {
+    if (
+      window.confirm('You have unsaved changes to this report — leave anyway?')
+    ) {
       suppressLeaveGuard()
       setReportDirty(false)
       blocker.proceed()
@@ -98,7 +117,9 @@ export function ReportPage() {
       const next = await api<Sprint>(`/sprints/${sprintId}`)
       setSprint(next)
       if (next.project_id) {
-        const people = await api<Member[]>(`/projects/${next.project_id}/members`)
+        const people = await api<Member[]>(
+          `/projects/${next.project_id}/members`,
+        )
         setMembers(people)
         void loadComments(next.id).catch(() => undefined)
       }
@@ -108,7 +129,9 @@ export function ReportPage() {
       }
       let report: SprintReport | null = null
       try {
-        report = normalizeReport(await api<SprintReport>(`/sprints/${sprintId}/report`))
+        report = normalizeReport(
+          await api<SprintReport>(`/sprints/${sprintId}/report`),
+        )
       } catch (error) {
         if (error instanceof ApiError && error.status === 404) report = null
         else throw error
@@ -116,7 +139,9 @@ export function ReportPage() {
       if (report?.final_content) {
         const finalFields = prepareFields(
           report.final_content,
-          (next.stories_snapshot ?? []).filter((story) => story.status_at_close === 'Done').length,
+          (next.stories_snapshot ?? []).filter(
+            (story) => story.status_at_close === 'Done',
+          ).length,
         )
         setSavedFinal(finalFields)
         setFields(finalFields)
@@ -238,7 +263,9 @@ export function ReportPage() {
       </header>
       {mode === 'drafting' ? <p>Drafting your sprint report…</p> : null}
       {mode === 'loading' ? <p>Loading the sprint…</p> : null}
-      {mode === 'not-closed' ? <p>Close the sprint before generating a report.</p> : null}
+      {mode === 'not-closed' ? (
+        <p>Close the sprint before generating a report.</p>
+      ) : null}
       {mode === 'empty' ? (
         <p>
           {EMPTY_SPRINT_DETAIL} <Link to={projectHref}>Back to board</Link>
@@ -292,7 +319,9 @@ export function ReportPage() {
               email={session?.user.email ?? ''}
               draft={draftText}
               onDraft={setDraftText}
-              onPosted={(comment) => setComments((current) => [...current, comment])}
+              onPosted={(comment) =>
+                setComments((current) => [...current, comment])
+              }
               onOpenTeam={() => setTeamOpen(true)}
             />
           ) : null}
@@ -303,7 +332,11 @@ export function ReportPage() {
               </button>
             ) : (
               <>
-                <button type="button" disabled={blank || saving} onClick={() => void save()}>
+                <button
+                  type="button"
+                  disabled={blank || saving}
+                  onClick={() => void save()}
+                >
                   {saving ? 'Saving…' : 'Save report'}
                 </button>
                 <button type="button" onClick={discard}>
@@ -348,7 +381,9 @@ function ReportBlock({
     return (
       <section>
         <h2>{REPORT_LABELS[name]}</h2>
-        <p className={absence ? 'muted-italic' : honest ? 'honest' : ''}>{value}</p>
+        <p className={absence ? 'muted-italic' : honest ? 'honest' : ''}>
+          {value}
+        </p>
       </section>
     )
   }

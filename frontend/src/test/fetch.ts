@@ -23,7 +23,8 @@ export function mockFetch(handler: (call: Call) => Result | Promise<Result>) {
       const call: Call = {
         url: String(input),
         method: (init?.method ?? 'GET').toUpperCase(),
-        body: init?.body === undefined ? undefined : JSON.parse(String(init.body)),
+        body:
+          init?.body === undefined ? undefined : JSON.parse(String(init.body)),
         authorization: headers.get('Authorization'),
       }
       calls.push(call)
@@ -31,7 +32,10 @@ export function mockFetch(handler: (call: Call) => Result | Promise<Result>) {
       if (result.network) throw new TypeError('Failed to fetch')
       const status = result.status ?? 200
       if (status === 204) return new Response(null, { status: 204 })
-      const raw = result.text !== undefined ? result.text : JSON.stringify(result.json ?? null)
+      const raw =
+        result.text !== undefined
+          ? result.text
+          : JSON.stringify(result.json ?? null)
       return new Response(raw, {
         status,
         statusText: status >= 200 && status < 300 ? 'OK' : '',

@@ -5,7 +5,9 @@ import { AccountBar } from './session'
 import type { Project } from './types'
 
 export function ProjectListPage() {
-  const [projects, setProjects] = useState<Array<Project & { pending?: boolean }>>([])
+  const [projects, setProjects] = useState<
+    Array<Project & { pending?: boolean }>
+  >([])
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [error, setError] = useState('')
@@ -54,7 +56,9 @@ export function ProjectListPage() {
           description: description.trim() || undefined,
         },
       })
-      setProjects((current) => current.map((row) => (row.id === pendingId ? created : row)))
+      setProjects((current) =>
+        current.map((row) => (row.id === pendingId ? created : row)),
+      )
       setName('')
       setDescription('')
     } catch (caught) {
@@ -80,15 +84,27 @@ export function ProjectListPage() {
       <form className="stack" onSubmit={(event) => void create(event)}>
         <label>
           Name
-          <input value={name} maxLength={100} onChange={(event) => setName(event.target.value)} />
+          <input
+            value={name}
+            maxLength={100}
+            onChange={(event) => setName(event.target.value)}
+          />
         </label>
-        {name.length > 100 ? <p className="field-error">Name must be 100 characters or fewer.</p> : null}
+        {name.length > 100 ? (
+          <p className="field-error">Name must be 100 characters or fewer.</p>
+        ) : null}
         <label>
           Description
-          <textarea value={description} onChange={(event) => setDescription(event.target.value)} />
+          <textarea
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+          />
         </label>
         {error ? <p className="field-error">{error}</p> : null}
-        <button type="submit" disabled={!name.trim() || name.trim().length > 100 || busy}>
+        <button
+          type="submit"
+          disabled={!name.trim() || name.trim().length > 100 || busy}
+        >
           Create project
         </button>
       </form>
@@ -101,19 +117,25 @@ export function ProjectListPage() {
           </button>
         </p>
       ) : null}
-      {!loading && !failed && projects.length === 0 ? <p>No projects yet.</p> : null}
+      {!loading && !failed && projects.length === 0 ? (
+        <p>No projects yet.</p>
+      ) : null}
       <ul className="project-list">
         {projects.map((project) => (
           <li key={project.id}>
             {project.pending ? (
               <span>
                 <strong>{project.name}</strong>
-                {project.description ? <small>{project.description}</small> : null}
+                {project.description ? (
+                  <small>{project.description}</small>
+                ) : null}
               </span>
             ) : (
               <Link to={`/projects/${project.id}`}>
                 <strong>{project.name}</strong>
-                {project.description ? <small>{project.description}</small> : null}
+                {project.description ? (
+                  <small>{project.description}</small>
+                ) : null}
               </Link>
             )}
           </li>

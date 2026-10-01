@@ -1,14 +1,40 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type PointerEvent as ReactPointerEvent } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type PointerEvent as ReactPointerEvent,
+} from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api, ApiError } from './api'
 import { AccountBar, useSession } from './session'
 import { TicketModal } from './TicketModal'
 import { toast } from './toast'
-import type { Comment, Member, Priority, Project, SortMode, Sprint, Status, Story, StoryType } from './types'
+import type {
+  Comment,
+  Member,
+  Priority,
+  Project,
+  SortMode,
+  Sprint,
+  Status,
+  Story,
+  StoryType,
+} from './types'
 import { PRIORITIES, STATUSES, STORY_TYPES } from './types'
-import { BranchIcon, formatDate, PriorityBadge, priorityRank, sprintLabel, TypeIcon } from './ui'
+import {
+  BranchIcon,
+  formatDate,
+  PriorityBadge,
+  priorityRank,
+  sprintLabel,
+  TypeIcon,
+} from './ui'
 
-const NO_ACTIVE = 'No active sprint — create or activate one before adding stories.'
+const NO_ACTIVE =
+  'No active sprint — create or activate one before adding stories.'
 const ALREADY = 'This story was already moved.'
 
 export function WorkspacePage() {
@@ -49,13 +75,16 @@ export function WorkspacePage() {
 
   const load = useCallback(async () => {
     try {
-      const [nextProject, nextStories, nextSprints, nextMembers] = await Promise.all([
-        api<Project>(`/projects/${projectId}`),
-        api<Story[]>(`/projects/${projectId}/stories`),
-        api<Sprint[]>(`/projects/${projectId}/sprints`),
-        api<Member[]>(`/projects/${projectId}/members`),
-      ])
-      const nextActive = nextSprints.find((sprint) => sprint.status === 'Active')
+      const [nextProject, nextStories, nextSprints, nextMembers] =
+        await Promise.all([
+          api<Project>(`/projects/${projectId}`),
+          api<Story[]>(`/projects/${projectId}/stories`),
+          api<Sprint[]>(`/projects/${projectId}/sprints`),
+          api<Member[]>(`/projects/${projectId}/members`),
+        ])
+      const nextActive = nextSprints.find(
+        (sprint) => sprint.status === 'Active',
+      )
       const detail = nextActive
         ? await api<Sprint>(`/sprints/${nextActive.id}`)
         : null
@@ -119,7 +148,9 @@ export function WorkspacePage() {
     const rows =
       status === 'Backlog'
         ? stories.filter((story) => story.status === 'Backlog')
-        : stories.filter((story) => activeIds.has(story.id) && story.status === status)
+        : stories.filter(
+            (story) => activeIds.has(story.id) && story.status === status,
+          )
     return sortStories(rows, sortMode)
   }
 
@@ -136,7 +167,10 @@ export function WorkspacePage() {
           ? {
               ...item,
               status,
-              open_sprint_id: status === 'Backlog' ? null : (active?.id ?? item.open_sprint_id),
+              open_sprint_id:
+                status === 'Backlog'
+                  ? null
+                  : (active?.id ?? item.open_sprint_id),
             }
           : item,
       ),
@@ -153,15 +187,23 @@ export function WorkspacePage() {
         method: 'PATCH',
         body: { status, expected_status: story.status },
       })
-      setStories((current) => current.map((item) => (item.id === updated.id ? updated : item)))
+      setStories((current) =>
+        current.map((item) => (item.id === updated.id ? updated : item)),
+      )
     } catch (error) {
       setStories(previous)
       setActiveStories(previousActive)
       if (error instanceof ApiError && error.status === 401) return
       if (error instanceof ApiError && error.status === 409) {
-        if (error.detail === NO_ACTIVE || error.detail.toLowerCase().includes('no active sprint')) {
+        if (
+          error.detail === NO_ACTIVE ||
+          error.detail.toLowerCase().includes('no active sprint')
+        ) {
           toast(NO_ACTIVE)
-        } else if (error.detail === ALREADY || error.detail.toLowerCase().includes('already moved')) {
+        } else if (
+          error.detail === ALREADY ||
+          error.detail.toLowerCase().includes('already moved')
+        ) {
           toast('This story was already moved — refreshing board.')
           void load()
         } else {
@@ -234,8 +276,14 @@ export function WorkspacePage() {
   async function activate() {
     if (!planned) return
     try {
-      const updated = await api<Sprint>(`/sprints/${planned.id}/activate`, { method: 'POST' })
-      setSprints((current) => current.map((sprint) => (sprint.id === updated.id ? { ...sprint, ...updated } : sprint)))
+      const updated = await api<Sprint>(`/sprints/${planned.id}/activate`, {
+        method: 'POST',
+      })
+      setSprints((current) =>
+        current.map((sprint) =>
+          sprint.id === updated.id ? { ...sprint, ...updated } : sprint,
+        ),
+      )
       await load()
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) return
@@ -254,7 +302,8 @@ export function WorkspacePage() {
       navigate(`/sprints/${active.id}/report`)
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) return
-      if (error instanceof ApiError && error.status === 409) toast('This sprint is already closed.')
+      if (error instanceof ApiError && error.status === 409)
+        toast('This sprint is already closed.')
       else toast("Couldn't save that — try again.")
       setClosing(false)
     }
@@ -280,7 +329,9 @@ export function WorkspacePage() {
         <div>
           <Link to="/">Projects</Link>
           <h1>{project.name}</h1>
-          {project.description ? <p className="muted">{project.description}</p> : null}
+          {project.description ? (
+            <p className="muted">{project.description}</p>
+          ) : null}
         </div>
         <div className="header-actions">
           <button type="button" onClick={() => setTeamOpen(true)}>
@@ -324,7 +375,10 @@ export function WorkspacePage() {
                 </button>
               ) : (
                 <div className="confirm">
-                  <p>Close this sprint? Unfinished stories will return to Backlog.</p>
+                  <p>
+                    Close this sprint? Unfinished stories will return to
+                    Backlog.
+                  </p>
                   <label>
                     Faculty notes
                     <textarea
@@ -344,7 +398,11 @@ export function WorkspacePage() {
                     >
                       Cancel
                     </button>
-                    <button type="button" onClick={() => void closeSprint()} disabled={closing}>
+                    <button
+                      type="button"
+                      onClick={() => void closeSprint()}
+                      disabled={closing}
+                    >
                       {closing ? 'Closing…' : 'Confirm'}
                     </button>
                   </div>
@@ -382,7 +440,9 @@ export function WorkspacePage() {
           <ul>
             {closed.map((sprint) => (
               <li key={sprint.id}>
-                <Link to={`/sprints/${sprint.id}/report`}>{sprintLabel('Closed', sprint.goal)}</Link>
+                <Link to={`/sprints/${sprint.id}/report`}>
+                  {sprintLabel('Closed', sprint.goal)}
+                </Link>
               </li>
             ))}
           </ul>
@@ -392,15 +452,18 @@ export function WorkspacePage() {
         {STATUSES.map((status) => {
           const rows = columnStories(status)
           const visible = hideResolved && status === 'Done' ? [] : rows
-          const hiddenCount = hideResolved && status === 'Done' ? rows.length : 0
+          const hiddenCount =
+            hideResolved && status === 'Done' ? rows.length : 0
           const legalTarget = status === 'Backlog' || !sprintColumnsBlocked
-          const highlighted = draggingId !== null && hoverStatus === status && legalTarget
+          const highlighted =
+            draggingId !== null && hoverStatus === status && legalTarget
           const dragged = stories.find((story) => story.id === draggingId)
           const slot =
             dragged && highlighted && dragged.status !== status
-              ? sortStories([...rows, { ...dragged, status }], sortMode).findIndex(
-                  (story) => story.id === dragged.id,
-                )
+              ? sortStories(
+                  [...rows, { ...dragged, status }],
+                  sortMode,
+                ).findIndex((story) => story.id === dragged.id)
               : -1
           return (
             <section
@@ -427,7 +490,10 @@ export function WorkspacePage() {
                 </p>
               ) : null}
               {status === 'Backlog' && adding ? (
-                <form className="add-story" onSubmit={(event) => void addStory(event)}>
+                <form
+                  className="add-story"
+                  onSubmit={(event) => void addStory(event)}
+                >
                   <input
                     value={title}
                     placeholder="Title"
@@ -442,7 +508,12 @@ export function WorkspacePage() {
                   />
                   <label>
                     Priority
-                    <select value={priority} onChange={(event) => setPriority(event.target.value as Priority)}>
+                    <select
+                      value={priority}
+                      onChange={(event) =>
+                        setPriority(event.target.value as Priority)
+                      }
+                    >
                       {PRIORITIES.map((item) => (
                         <option key={item}>{item}</option>
                       ))}
@@ -450,7 +521,12 @@ export function WorkspacePage() {
                   </label>
                   <label>
                     Type
-                    <select value={storyType} onChange={(event) => setStoryType(event.target.value as StoryType)}>
+                    <select
+                      value={storyType}
+                      onChange={(event) =>
+                        setStoryType(event.target.value as StoryType)
+                      }
+                    >
                       {STORY_TYPES.map((item) => (
                         <option key={item}>{item}</option>
                       ))}
@@ -461,7 +537,9 @@ export function WorkspacePage() {
                   </button>
                 </form>
               ) : null}
-              {visible.length === 0 && hiddenCount === 0 && !(status === 'Backlog' && adding) ? (
+              {visible.length === 0 &&
+              hiddenCount === 0 &&
+              !(status === 'Backlog' && adding) ? (
                 status === 'Backlog' ? (
                   <p className="empty">
                     No stories yet — add one
@@ -474,7 +552,10 @@ export function WorkspacePage() {
                 )
               ) : null}
               {hiddenCount > 0 && visible.length === 0 ? (
-                <p className="empty">Resolved stories are hidden. Turn off Hide resolved to see them.</p>
+                <p className="empty">
+                  Resolved stories are hidden. Turn off Hide resolved to see
+                  them.
+                </p>
               ) : null}
               {visible.map((story, index) => (
                 <div key={story.id}>
@@ -490,7 +571,11 @@ export function WorkspacePage() {
                     }}
                     onDragStart={() => setDraggingId(story.id)}
                     onDragEnd={(x, y) => dropOn(story.id, x, y)}
-                    onToggleMenu={() => setMenuFor((current) => (current === story.id ? null : story.id))}
+                    onToggleMenu={() =>
+                      setMenuFor((current) =>
+                        current === story.id ? null : story.id,
+                      )
+                    }
                     onMove={(status) => {
                       setMenuFor(null)
                       void moveStory(story, status)
@@ -498,7 +583,9 @@ export function WorkspacePage() {
                   />
                 </div>
               ))}
-              {slot === visible.length && slot >= 0 ? <div className="insert-line" /> : null}
+              {slot === visible.length && slot >= 0 ? (
+                <div className="insert-line" />
+              ) : null}
             </section>
           )
         })}
@@ -510,12 +597,20 @@ export function WorkspacePage() {
           comments={comments}
           email={session?.user.email ?? ''}
           draft={drafts[openStory.id] ?? ''}
-          onDraft={(value) => setDrafts((current) => ({ ...current, [openStory.id]: value }))}
-          onPosted={(comment) => setComments((current) => [...current, comment])}
+          onDraft={(value) =>
+            setDrafts((current) => ({ ...current, [openStory.id]: value }))
+          }
+          onPosted={(comment) =>
+            setComments((current) => [...current, comment])
+          }
           onOpenTeam={() => setTeamOpen(true)}
           onClose={() => setOpenId(null)}
           onStory={(updated) =>
-            setStories((current) => current.map((story) => (story.id === updated.id ? updated : story)))
+            setStories((current) =>
+              current.map((story) =>
+                story.id === updated.id ? updated : story,
+              ),
+            )
           }
           onMove={(story, status) => void moveStory(story, status)}
         />
@@ -570,7 +665,10 @@ function StoryCard({
     const startY = event.clientY
     let moved = false
     function move(pointer: globalThis.PointerEvent) {
-      if (!moved && Math.hypot(pointer.clientX - startX, pointer.clientY - startY) > 6) {
+      if (
+        !moved &&
+        Math.hypot(pointer.clientX - startX, pointer.clientY - startY) > 6
+      ) {
         moved = true
         onDragStart()
       }
@@ -593,7 +691,12 @@ function StoryCard({
       {dragging ? <div className="placeholder" /> : null}
       <div className="card-top">
         <h3>{story.title}</h3>
-        <button type="button" data-no-drag aria-label="Move story" onClick={onToggleMenu}>
+        <button
+          type="button"
+          data-no-drag
+          aria-label="Move story"
+          onClick={onToggleMenu}
+        >
           …
         </button>
       </div>
@@ -601,7 +704,11 @@ function StoryCard({
         <ul className="move-menu" data-no-drag>
           {STATUSES.map((status) => (
             <li key={status}>
-              <button type="button" disabled={status === story.status} onClick={() => onMove(status)}>
+              <button
+                type="button"
+                disabled={status === story.status}
+                onClick={() => onMove(status)}
+              >
                 Move to: {status}
               </button>
             </li>
@@ -680,7 +787,12 @@ export function TeamDialog({
     >
       <header className="ticket-header">
         <h2>Team</h2>
-        <button type="button" className="icon-button" aria-label="Close" onClick={onClose}>
+        <button
+          type="button"
+          className="icon-button"
+          aria-label="Close"
+          onClick={onClose}
+        >
           ×
         </button>
       </header>
@@ -692,7 +804,10 @@ export function TeamDialog({
       <form onSubmit={(event) => void add(event)}>
         <label>
           Name
-          <input value={name} onChange={(event) => setName(event.target.value)} />
+          <input
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+          />
         </label>
         {error ? <p className="field-error">{error}</p> : null}
         <button type="submit" disabled={!name.trim()}>
