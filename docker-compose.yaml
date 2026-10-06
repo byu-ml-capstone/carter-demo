@@ -3,19 +3,18 @@ services:
     build:
       context: ./frontend
       args:
-        VITE_API_ORIGIN: ${SERVICE_FQDN_FRONTEND:-http://localhost:43123}
+        VITE_API_ORIGIN: "${SERVICE_FQDN_FRONTEND:-http://localhost:43123}"
     expose:
       - "80"
     environment:
-      - APP_URL=${SERVICE_FQDN_FRONTEND:-http://localhost:43123}
+      APP_URL: "${SERVICE_FQDN_FRONTEND:-http://localhost:43123}"
     depends_on:
       backend:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
       start_period: 30s
-      start_interval: 2s
-      interval: 5m
+      interval: 30s
       timeout: 5s
       retries: 3
     restart: unless-stopped
@@ -24,16 +23,15 @@ services:
     expose:
       - "8000"
     environment:
-      - APP_URL=${SERVICE_FQDN_BACKEND:-http://localhost:8000}
-      - DATABASE_URL=sqlite:////data/workspace.db
-      - CORS_ORIGINS=${SERVICE_FQDN_FRONTEND:-http://localhost:43123}
+      APP_URL: "${SERVICE_FQDN_BACKEND:-http://localhost:8000}"
+      DATABASE_URL: "sqlite:////data/workspace.db"
+      CORS_ORIGINS: "${SERVICE_FQDN_FRONTEND:-http://localhost:43123}"
     volumes:
       - workspace-data:/data
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health').read()"]
       start_period: 30s
-      start_interval: 2s
-      interval: 5m
+      interval: 30s
       timeout: 5s
       retries: 3
     restart: unless-stopped
