@@ -5,11 +5,14 @@ services:
       args:
         VITE_API_ORIGIN: ${SERVICE_FQDN_FRONTEND:-http://localhost:43123}
     expose:
-      - "43123"
+      - "80"
     environment:
       - APP_URL=${SERVICE_FQDN_FRONTEND:-http://localhost:43123}
+    depends_on:
+      backend:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:43123/"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
       start_period: 30s
       start_interval: 2s
       interval: 5m
