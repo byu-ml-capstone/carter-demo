@@ -65,7 +65,7 @@ describe('auth', () => {
       screen.getByRole('button', { name: 'Create account' }),
     )
     expect(
-      await screen.findByRole('heading', { name: 'Projects' }),
+      await screen.findByRole('button', { name: 'Sign out' }),
     ).toBeInTheDocument()
     expect(getToken()).toBe('reg-token')
     expect(localStorage.getItem('reg-token')).toBeNull()
@@ -84,7 +84,7 @@ describe('auth', () => {
     await guest.user.type(screen.getByLabelText('Password'), 'password1')
     await guest.user.click(screen.getByRole('button', { name: 'Sign in' }))
     expect(
-      await screen.findByRole('heading', { name: 'Projects' }),
+      await screen.findByRole('button', { name: 'Sign out' }),
     ).toBeInTheDocument()
     expect(getToken()).toBe('log-token')
     await waitFor(() => {
@@ -200,7 +200,7 @@ describe('auth', () => {
     expect(screen.getByRole('button', { name: 'Signing in…' })).toBeDisabled()
     finish?.({ json: { token: 'token-1', user: signedInUser }, status: 200 })
     expect(
-      await screen.findByRole('heading', { name: 'Projects' }),
+      await screen.findByRole('button', { name: 'Sign out' }),
     ).toBeInTheDocument()
   })
 
@@ -214,16 +214,16 @@ describe('auth', () => {
     await user.type(screen.getByLabelText('Email'), 'ada@example.com')
     await user.type(screen.getByLabelText('Password'), 'password1')
     await user.click(screen.getByRole('button', { name: 'Sign in' }))
-    await screen.findByRole('heading', { name: 'Projects' })
+    await screen.findByRole('button', { name: 'Sign out' })
     await router.navigate('/sign-in')
     await waitFor(() => expect(router.state.location.pathname).toBe('/'))
     expect(
-      screen.getByRole('heading', { name: 'Projects' }),
+      screen.getByRole('heading', { name: 'My Workspace' }),
     ).toBeInTheDocument()
     await router.navigate('/sign-up')
     await waitFor(() => expect(router.state.location.pathname).toBe('/'))
     expect(
-      screen.getByRole('heading', { name: 'Projects' }),
+      screen.getByRole('heading', { name: 'My Workspace' }),
     ).toBeInTheDocument()
   })
 })

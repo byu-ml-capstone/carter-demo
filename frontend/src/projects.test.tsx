@@ -23,7 +23,7 @@ async function enter(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText('Email'), 'ada@example.com')
   await user.type(screen.getByLabelText('Password'), 'password1')
   await user.click(screen.getByRole('button', { name: 'Sign in' }))
-  await screen.findByRole('heading', { name: 'Projects' })
+  await screen.findByRole('button', { name: 'Sign out' })
 }
 
 describe('projects', () => {
@@ -60,6 +60,7 @@ describe('projects', () => {
     expect(
       calls.find((call) => pathOf(call.url) === '/projects')?.authorization,
     ).toBe('Bearer token-1')
+    await user.click(screen.getByRole('button', { name: 'New Project' }))
     fireEvent.submit(
       screen.getByRole('button', { name: 'Create project' }).closest('form')!,
     )
@@ -145,6 +146,7 @@ describe('projects', () => {
     })
     const { user } = signIn()
     await enter(user)
+    await user.click(screen.getByRole('button', { name: 'New Project' }))
     fireEvent.change(screen.getByLabelText('Name'), {
       target: { value: 'Capstone' },
     })
@@ -202,6 +204,8 @@ describe('projects', () => {
     await user.type(screen.getByLabelText('Email'), 'ada@example.com')
     await user.type(screen.getByLabelText('Password'), 'password1')
     await user.click(screen.getByRole('button', { name: 'Sign in' }))
+    await screen.findByRole('button', { name: 'Sign out' })
+    await user.click(screen.getByRole('button', { name: 'New Project' }))
     const name = await screen.findByLabelText('Name')
     fireEvent.change(name, { target: { value: 'x'.repeat(101) } })
     expect(

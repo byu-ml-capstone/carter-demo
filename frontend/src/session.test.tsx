@@ -63,7 +63,7 @@ describe('session', () => {
     await user.type(screen.getByLabelText('Password'), 'password1')
     await user.click(screen.getByRole('button', { name: 'Sign in' }))
     expect(
-      await screen.findByRole('heading', { name: 'Projects' }),
+      await screen.findByRole('button', { name: 'Sign out' }),
     ).toBeInTheDocument()
     expect(getToken()).toBe('token-1')
 
@@ -71,7 +71,7 @@ describe('session', () => {
     vi.spyOn(window, 'confirm').mockReturnValueOnce(false)
     await user.click(screen.getByRole('button', { name: 'Sign out' }))
     expect(
-      screen.getByRole('heading', { name: 'Projects' }),
+      screen.getByRole('heading', { name: 'My Workspace' }),
     ).toBeInTheDocument()
 
     vi.spyOn(window, 'confirm').mockReturnValueOnce(true)
@@ -86,7 +86,7 @@ describe('session', () => {
     await user.type(screen.getByLabelText('Email'), 'ada@example.com')
     await user.type(screen.getByLabelText('Password'), 'password1')
     await user.click(screen.getByRole('button', { name: 'Sign in' }))
-    await screen.findByRole('heading', { name: 'Projects' })
+    await screen.findByRole('button', { name: 'Sign out' })
     setToken(null)
     await user.click(screen.getByRole('button', { name: 'Sign out' }))
     expect(

@@ -97,6 +97,7 @@ export function TicketModal({
     <dialog
       ref={dialogRef}
       className="ticket"
+      style={{ background: 'var(--color-surface-container-lowest)' }}
       onCancel={(event) => {
         event.preventDefault()
         onClose()
@@ -105,7 +106,14 @@ export function TicketModal({
         if (event.target === dialogRef.current) onClose()
       }}
     >
-      <header className="ticket-header">
+      <header
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          marginBottom: '1rem',
+        }}
+      >
         <TypeIcon type={story.type} />
         <input
           className="title-input"
@@ -129,8 +137,26 @@ export function TicketModal({
           className="icon-button"
           aria-label="Close"
           onClick={onClose}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'none',
+            border: 'none',
+            borderRadius: '0.25rem',
+            color: 'var(--color-on-surface-variant)',
+            cursor: 'pointer',
+            padding: '0.25rem',
+            flexShrink: 0,
+          }}
         >
-          ×
+          <span
+            className="material-symbols-outlined"
+            aria-hidden="true"
+            style={{ fontSize: '20px' }}
+          >
+            close
+          </span>
         </button>
       </header>
       <label>

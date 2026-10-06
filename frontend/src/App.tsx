@@ -5,6 +5,7 @@ import {
   createBrowserRouter,
   useLocation,
 } from 'react-router-dom'
+import { AppLayout } from './AppLayout'
 import { AuthPage } from './AuthPage'
 import { ProjectListPage } from './ProjectListPage'
 import { ReportPage } from './ReportPage'
@@ -29,7 +30,7 @@ function RequireAuth() {
     const next = safeNext(`${location.pathname}${location.search}`)
     return <Navigate to={`/sign-in?next=${encodeURIComponent(next)}`} replace />
   }
-  return <Outlet />
+  return <AppLayout />
 }
 
 export const routes = [
