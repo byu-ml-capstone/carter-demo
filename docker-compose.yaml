@@ -1,14 +1,15 @@
 services:
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        VITE_API_ORIGIN: ${SERVICE_FQDN_BACKEND:-http://localhost:8000}
     expose:
       - "43123"
     environment:
-      - APP_URL=${SERVICE_FQDN_FRONTEND}
-    volumes:
-      - workspace-data:/data
+      - APP_URL=${SERVICE_FQDN_FRONTEND:-http://localhost:43123}
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:43123/health').read()"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:43123/"]
       start_period: 30s
       start_interval: 2s
       interval: 5m
@@ -20,9 +21,9 @@ services:
     expose:
       - "8000"
     environment:
-      - APP_URL=${SERVICE_FQDN_BACKEND}
+      - APP_URL=${SERVICE_FQDN_BACKEND:-http://localhost:8000}
       - DATABASE_URL=sqlite:////data/workspace.db
-      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:43123}
+      - CORS_ORIGINS=${SERVICE_FQDN_FRONTEND:-http://localhost:43123}
     volumes:
       - workspace-data:/data
     healthcheck:

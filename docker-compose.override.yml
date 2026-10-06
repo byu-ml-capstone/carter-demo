@@ -2,10 +2,13 @@
 # run `docker compose up` from the repo root. Coolify uses
 # `-f docker-compose.yaml` explicitly, so nothing here reaches production.
 #
-# Expose the API on host port 8000. In production Traefik routes the domain
-# and no host-port binding is used.
+# Expose the API on host port 8000 and the UI on 43123. In production Traefik
+# routes the domain and no host-port binding is used.
 
 services:
+  frontend:
+    ports:
+      - "43123:43123"
   backend:
     ports:
       - "8000:8000"
