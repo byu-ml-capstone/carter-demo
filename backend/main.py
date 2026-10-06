@@ -24,7 +24,7 @@ from domain import (
     normalize_faculty_notes,
 )
 
-APP_VERSION = "0.2.0"
+APP_VERSION = "0.1.2"
 
 log = logging.getLogger("workspace")
 if not log.handlers:
