@@ -3,7 +3,7 @@ services:
     build:
       context: ./frontend
       args:
-        VITE_API_ORIGIN: ${SERVICE_FQDN_BACKEND:-http://localhost:8000}
+        VITE_API_ORIGIN: ${SERVICE_FQDN_FRONTEND:-http://localhost:43123}
     expose:
       - "43123"
     environment:

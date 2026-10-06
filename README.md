@@ -39,7 +39,7 @@ The product spec is [`product_specification.md`](product_specification.md). [`Pr
 
 Compose runs one public service, `backend`, and stores the SQLite file on the `workspace-data` volume. Staging and production each get their own volume. `docker compose down` keeps the data; `docker compose down -v` deletes it.
 
-Coolify's Traefik routes to the container. The compose file references `${SERVICE_FQDN_BACKEND}` so Coolify generates the domain. Locally, `docker-compose.override.yml` publishes port 8000. The API allows the UI origin `http://localhost:43123` through `CORS_ORIGINS`.
+Coolify's Traefik routes to the container. The compose file references `${SERVICE_FQDN_FRONTEND}` and `${SERVICE_FQDN_BACKEND}`. The public hostname should attach to **`frontend`**; nginx proxies `/health` and the API paths to **`backend`** on the same URL so the browser and `./smoke-test.sh` can use one staging domain. Locally, `docker-compose.override.yml` publishes ports 43123 and 8000.
 
 | Variable | Purpose |
 |---|---|
@@ -164,7 +164,7 @@ terraform apply
 
 ### The one manual step
 
-Coolify's API will not accept per-service domains on a Docker Compose application. For each of the two Applications: **Access → gear icon on "1 configured domain"** (or the **Domains** tab) → under service `backend`, set `http://<your-repo>-staging.ml-capstone.cs.byu.edu` (or the production equivalent) → **Save**. Delete the auto-generated `sslip.io` placeholder and the `www.` variant.
+Coolify's API will not accept per-service domains on a Docker Compose application. For each of the two Applications: **Access → gear icon on "1 configured domain"** (or the **Domains** tab) → under service **`frontend`**, set `http://<your-repo>-staging.ml-capstone.cs.byu.edu` (or the prod equivalent) → **Save**. Delete the auto-generated `sslip.io` placeholder and the `www.` variant. The frontend nginx config proxies API routes to `backend`; you do not need a separate public domain for the API unless you want one.
 
 Do this before the first deploy. Traefik bakes routing labels into a container when it starts, so a domain added afterwards returns `404 page not found` until you hit **Redeploy**.
 

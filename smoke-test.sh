@@ -5,19 +5,13 @@
 #
 #   Local (no argument):
 #     ./smoke-test.sh
-#     -> builds + starts the API (backend) with its SQLite volume,
-#        waits for /health on localhost:8000, curls the endpoints,
-#        leaves everything running so you can keep poking at it.
+#     -> builds + starts the stack (frontend + backend), waits for /health on
+#        localhost:8000, curls the endpoints, leaves containers running.
 #
 #   Remote (argument = base URL):
-#     ./smoke-test.sh http://<your-app>.ml-capstone.cs.byu.edu
-#     -> skips docker compose entirely; curls the endpoints against
-#        the given URL. Useful for smoke-testing a Coolify deploy
-#        (staging or prod) from your laptop after a push.
-#
-# Both modes hit /health, /version, register, and create a project.
-# Workspace routes need the bearer token from register. Data lives in
-# the SQLite file on the workspace-data volume.
+#     ./smoke-test.sh http://<your-app>-staging.ml-capstone.cs.byu.edu
+#     -> curls the public staging/prod URL. The frontend nginx proxy forwards
+#        /health and the API routes to the backend on the same host.
 
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -27,33 +21,37 @@ if [ $# -eq 0 ]; then
     BASE_URL="http://localhost:8000"
 else
     MODE=remote
-    # Strip a trailing slash so /health etc. don't become //health.
     BASE_URL="${1%/}"
 fi
 
 if [ "$MODE" = "local" ]; then
-    # Stub SERVICE_FQDN_BACKEND for the compose interpolation in
-    # docker-compose.yaml. In production Coolify populates this.
     export SERVICE_FQDN_BACKEND="$BASE_URL"
+    export SERVICE_FQDN_FRONTEND="http://localhost:43123"
 
-    echo "=== local mode: building + starting backend (docker compose) ==="
+    echo "=== local mode: building + starting stack (docker compose) ==="
     docker compose down --remove-orphans >/dev/null 2>&1 || true
     docker compose up -d --build
 else
     echo "=== remote mode: smoke-testing $BASE_URL ==="
 fi
 
-# Wait for /health. In local mode the compose build + startup takes a beat;
-# in remote mode this catches "did the deploy actually finish yet".
 echo -n "waiting for /health "
+ready=0
 for _ in $(seq 1 60); do
-    if curl -sSf "$BASE_URL/health" >/dev/null 2>&1; then
+    if curl -sS "$BASE_URL/health" 2>/dev/null | python3 -c 'import json,sys; json.load(sys.stdin)["ok"]' >/dev/null 2>&1; then
+        ready=1
         echo " ready"
         break
     fi
     echo -n "."
     sleep 1
 done
+if [ "$ready" -eq 0 ]; then
+    echo
+    echo "ERROR: /health never returned {\"ok\":true} at $BASE_URL/health"
+    echo "If this is a deployed URL, confirm the domain is on the frontend service and redeploy."
+    exit 1
+fi
 
 echo
 echo "=== GET /health ==="
@@ -63,21 +61,33 @@ echo "=== GET /version ==="
 curl -sS "$BASE_URL/version"
 echo
 echo "=== POST /auth/register ==="
-TOKEN=$(curl -sS -X POST "$BASE_URL/auth/register" \
+SMOKE_EMAIL="smoke-$(date +%s)@example.com"
+extract_token() {
+    python3 -c 'import json,sys; print(json.load(sys.stdin)["token"])'
+}
+AUTH_JSON=$(curl -sS -X POST "$BASE_URL/auth/register" \
     -H 'Content-Type: application/json' \
-    -d '{"email":"smoke@example.com","password":"password1"}' \
-    | python3 -c 'import json,sys; print(json.load(sys.stdin)["token"])')
+    -d "{\"email\":\"$SMOKE_EMAIL\",\"password\":\"password1\"}")
+if ! TOKEN=$(printf '%s' "$AUTH_JSON" | extract_token 2>/dev/null); then
+    echo "$AUTH_JSON"
+    echo "Register did not return a token; trying login as smoke@example.com..."
+    AUTH_JSON=$(curl -sS -X POST "$BASE_URL/auth/login" \
+        -H 'Content-Type: application/json' \
+        -d '{"email":"smoke@example.com","password":"password1"}')
+    TOKEN=$(printf '%s' "$AUTH_JSON" | extract_token)
+fi
 echo "token received"
 echo "=== POST /projects ==="
 curl -sS -X POST "$BASE_URL/projects" \
     -H "Authorization: Bearer $TOKEN" \
     -H 'Content-Type: application/json' \
-    -d '{"name":"Smoke project"}'
+    -d "{\"name\":\"Smoke project $SMOKE_EMAIL\"}"
 echo
 echo
 
 if [ "$MODE" = "local" ]; then
-    echo "backend is running at http://localhost:8000"
+    echo "API direct: http://localhost:8000"
+    echo "UI (with API proxy): http://localhost:43123"
     echo "SQLite data is on the workspace-data volume and survives docker compose down."
     echo "docker compose down -v deletes that volume."
     echo "Stop everything with: docker compose down"
