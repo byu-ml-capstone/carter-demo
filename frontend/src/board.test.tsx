@@ -86,7 +86,6 @@ function renderBoard() {
         children: [
           { path: '/projects/:projectId', element: <WorkspacePage /> },
           { path: '/sprints/:sprintId/report', element: <p>Report page</p> },
-          { path: '/sign-in', element: <p>Sign in page</p> },
           { path: '/', element: <p>Projects home</p> },
         ],
       },

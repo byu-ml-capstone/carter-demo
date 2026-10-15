@@ -3,16 +3,14 @@ import {
   Outlet,
   RouterProvider,
   createBrowserRouter,
-  useLocation,
 } from 'react-router-dom'
 import { AppLayout } from './AppLayout'
 import { AuthPage } from './AuthPage'
 import { ProjectListPage } from './ProjectListPage'
 import { ReportPage } from './ReportPage'
-import { SessionProvider, useSession } from './session'
+import { SessionProvider } from './session'
 import { Toaster } from './toast'
 import { WorkspacePage } from './WorkspacePage'
-import { safeNext } from './ui'
 
 function Root() {
   return (
@@ -23,24 +21,14 @@ function Root() {
   )
 }
 
-function RequireAuth() {
-  const { session } = useSession()
-  const location = useLocation()
-  if (!session) {
-    const next = safeNext(`${location.pathname}${location.search}`)
-    return <Navigate to={`/sign-in?next=${encodeURIComponent(next)}`} replace />
-  }
-  return <AppLayout />
-}
-
 export const routes = [
   {
     element: <Root />,
     children: [
-      { path: '/sign-in', element: <AuthPage mode="login" /> },
-      { path: '/sign-up', element: <AuthPage mode="register" /> },
+      { path: '/sign-in', element: <Navigate to="/" replace /> },
+      { path: '/sign-up', element: <AuthPage /> },
       {
-        element: <RequireAuth />,
+        element: <AppLayout />,
         children: [
           { path: '/', element: <ProjectListPage /> },
           { path: '/projects/:projectId', element: <WorkspacePage /> },

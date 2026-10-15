@@ -6,15 +6,19 @@ import { mockFetch } from './test/fetch'
 
 beforeEach(() => {
   setToken(null)
-  window.history.replaceState({}, '', '/sign-in')
+  window.history.replaceState({}, '', '/')
 })
 
 describe('app', () => {
-  it('renders the sign-in page from the browser router', async () => {
-    mockFetch(() => ({ status: 404, json: { detail: 'missing' } }))
+  it('renders the workspace from the browser router', async () => {
+    mockFetch(() => ({ json: [] }))
     render(<App />)
     expect(
       await screen.findByRole('heading', { name: 'My Workspace' }),
     ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'New Project' }),
+    ).toBeInTheDocument()
+    expect(screen.queryByLabelText('Email')).toBeNull()
   })
 })

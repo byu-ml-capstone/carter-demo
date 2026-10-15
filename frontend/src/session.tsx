@@ -6,7 +6,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { getToken, logout, setToken, setUnauthorizedHandler } from './api'
 import {
   clearAuthorKeys,
@@ -32,12 +32,12 @@ const SessionContext = createContext<SessionValue | null>(null)
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
-  const location = useLocation()
   const [session, setSession] = useState<Session | null>(null)
 
   useEffect(() => {
     setUnauthorizedHandler(() => {
-      if (isReportDirty()) {
+      const hadToken = Boolean(getToken())
+      if (hadToken && isReportDirty()) {
         window.alert('Your session ended. Unsaved report edits will be lost.')
         setReportDirty(false)
       }
@@ -45,16 +45,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setToken(null)
       setSession(null)
       clearAuthorKeys()
-      toast('Your session ended. Sign in again.')
-      const next = `${location.pathname}${location.search}`
-      const safe = next.startsWith('/') && !next.startsWith('//') ? next : '/'
-      navigate(`/sign-in?next=${encodeURIComponent(safe)}`, {
-        replace: true,
-        flushSync: true,
-      })
+      if (!hadToken) return
+      toast('Your session ended.')
+      navigate('/', { replace: true, flushSync: true })
     })
     return () => setUnauthorizedHandler(null)
-  }, [location.pathname, location.search, navigate])
+  }, [navigate])
 
   const value = useMemo<SessionValue>(
     () => ({
@@ -80,7 +76,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         setToken(null)
         setSession(null)
         clearAuthorKeys()
-        navigate('/sign-in', { replace: true })
+        navigate('/', { replace: true })
       },
     }),
     [navigate, session],

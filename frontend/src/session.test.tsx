@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -35,10 +35,11 @@ describe('session', () => {
 
   it('signs out, drops a failed logout, and ends an expired session', async () => {
     const user = userEvent.setup({ delay: null })
+    let registerToken = 'token-1'
     const calls = mockFetch((call) => {
       const path = pathOf(call.url)
-      if (path === '/auth/login')
-        return { json: { token: 'token-1', user: signedInUser } }
+      if (path === '/auth/register')
+        return { json: { token: registerToken, user: signedInUser } }
       if (path === '/auth/logout') {
         if (
           calls.filter((item) => pathOf(item.url) === '/auth/logout').length ===
@@ -57,11 +58,17 @@ describe('session', () => {
       }
       return { status: 404, json: { detail: 'missing' } }
     })
-    const router = createMemoryRouter(routes, { initialEntries: ['/sign-in'] })
+    const router = createMemoryRouter(routes, { initialEntries: ['/sign-up'] })
     render(<RouterProvider router={router} />)
-    await user.type(screen.getByLabelText('Email'), 'ada@example.com')
-    await user.type(screen.getByLabelText('Password'), 'password1')
-    await user.click(screen.getByRole('button', { name: 'Sign in' }))
+
+    async function createAccount() {
+      await user.type(await screen.findByLabelText('Email'), 'ada@example.com')
+      await user.type(screen.getByLabelText('Password'), 'password1')
+      await user.type(screen.getByLabelText('Confirm password'), 'password1')
+      await user.click(screen.getByRole('button', { name: 'Create account' }))
+    }
+
+    await createAccount()
     expect(
       await screen.findByRole('button', { name: 'Sign out' }),
     ).toBeInTheDocument()
@@ -82,33 +89,31 @@ describe('session', () => {
     ).toBeInTheDocument()
     expect(getToken()).toBeNull()
     expect(localStorage.getItem('my-workspace:author:p1')).toBeNull()
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Sign out' })).toBeNull(),
+    )
 
-    await user.type(screen.getByLabelText('Email'), 'ada@example.com')
-    await user.type(screen.getByLabelText('Password'), 'password1')
-    await user.click(screen.getByRole('button', { name: 'Sign in' }))
+    await router.navigate('/sign-up')
+    await createAccount()
     await screen.findByRole('button', { name: 'Sign out' })
     setToken(null)
     await user.click(screen.getByRole('button', { name: 'Sign out' }))
     expect(
-      await screen.findByRole('button', { name: 'Sign in' }),
+      await screen.findByRole('button', { name: 'New Project' }),
     ).toBeInTheDocument()
+    expect(screen.queryByLabelText('Email')).toBeNull()
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Sign out' })).toBeNull(),
+    )
 
-    await user.type(screen.getByLabelText('Email'), 'ada@example.com')
-    await user.type(screen.getByLabelText('Password'), 'password1')
-    mockFetch((call) => {
-      if (pathOf(call.url) === '/auth/login')
-        return { json: { token: 'expired', user: signedInUser } }
-      setReportDirty(true)
-      return { status: 401, json: { detail: 'Sign in required.' } }
-    })
+    registerToken = 'expired'
+    await router.navigate('/sign-up')
     const alertSpy = vi
       .spyOn(window, 'alert')
       .mockImplementation(() => undefined)
-    await user.click(screen.getByRole('button', { name: 'Sign in' }))
-    expect(
-      await screen.findByText('Your session ended. Sign in again.'),
-    ).toBeInTheDocument()
+    await createAccount()
+    expect(await screen.findByText('Your session ended.')).toBeInTheDocument()
     expect(alertSpy).toHaveBeenCalled()
-    expect(screen.getByLabelText('Email')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Email')).toBeNull()
   })
 })
