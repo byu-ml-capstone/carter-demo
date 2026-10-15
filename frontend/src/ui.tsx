@@ -75,10 +75,10 @@ export function BranchIcon() {
 }
 
 const PRIORITY_CLASSES: Record<Priority, string> = {
-  High: 'bg-[var(--color-error-container)] text-[var(--color-on-error-container)]',
+  High: 'bg-[var(--color-secondary)] text-[var(--color-on-secondary)]',
   Medium:
     'bg-[var(--color-surface-container-high)] text-[var(--color-on-surface)]',
-  Low: 'bg-[var(--color-surface-container)] text-[var(--color-on-surface-variant)]',
+  Low: 'bg-[var(--color-surface-container-low)] text-[var(--color-on-surface-variant)]',
 }
 
 export function PriorityBadge({ priority }: { priority: Priority }) {
@@ -90,9 +90,13 @@ export function PriorityBadge({ priority }: { priority: Priority }) {
         PRIORITY_CLASSES[priority],
       ].join(' ')}
       style={{
+        height: '20px',
+        padding: '0 8px',
+        borderRadius: '4px',
         fontFamily: 'var(--font-family-mono)',
-        fontSize: '0.6875rem',
-        lineHeight: '0.9375rem',
+        fontSize: '11px',
+        fontWeight: 600,
+        lineHeight: '20px',
       }}
     >
       {priority}

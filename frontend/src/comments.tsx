@@ -101,7 +101,6 @@ export function CommentThread({
   return (
     <section className="thread">
       <h3>Comments</h3>
-      {comments.length === 0 ? <p className="hint">No comments yet.</p> : null}
       <ol className="comments">
         {comments.map((comment) => {
           const author = members.find(
@@ -126,34 +125,19 @@ export function CommentThread({
           )
         })}
       </ol>
-      {selectable.length === 0 ? (
-        <p className="hint">
-          Add teammates to this project first.{' '}
-          <button type="button" onClick={onOpenTeam}>
-            Add a teammate
-          </button>
-        </p>
-      ) : (
-        <label className="author-picker">
-          Your name
-          <select
-            value={authorId}
-            onChange={(event) => chooseAuthor(event.target.value)}
-          >
-            <option value="">Choose your name</option>
-            {selectable.map((member) => (
-              <option key={member.id} value={member.id}>
-                {member.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      )}
       <div className="composer">
+        {selectable.length === 0 ? (
+          <p className="hint">
+            Add teammates to this project first.{' '}
+            <button type="button" onClick={onOpenTeam}>
+              Add a teammate
+            </button>
+          </p>
+        ) : null}
         <textarea
           ref={inputRef}
           value={draft}
-          placeholder="Write a comment"
+          placeholder="Write a comment or tag a teammate"
           onChange={(event) => {
             onDraft(event.target.value)
             setCaret(event.target.selectionStart ?? event.target.value.length)
@@ -203,13 +187,32 @@ export function CommentThread({
             ))}
           </ul>
         ) : null}
-        <button
-          type="button"
-          disabled={!authorId || !draft.trim() || posting}
-          onClick={() => void post()}
-        >
-          {posting ? 'Posting…' : 'Post'}
-        </button>
+        <div className="author-row">
+          {selectable.length > 0 ? (
+            <label className="author-picker">
+              Your name
+              <select
+                value={authorId}
+                onChange={(event) => chooseAuthor(event.target.value)}
+              >
+                <option value="">Choose your name</option>
+                {selectable.map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          <button
+            type="button"
+            className="comment-post"
+            disabled={!authorId || !draft.trim() || posting}
+            onClick={() => void post()}
+          >
+            {posting ? 'Posting…' : 'Post'}
+          </button>
+        </div>
       </div>
     </section>
   )

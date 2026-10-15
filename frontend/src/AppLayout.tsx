@@ -88,12 +88,6 @@ export function AppLayout() {
                 >
                   {session.user.email}
                 </span>
-                <span
-                  className="text-[var(--color-on-surface-variant)]"
-                  style={{ fontSize: '0.6875rem', lineHeight: '0.9375rem' }}
-                >
-                  Lead Engineer
-                </span>
               </div>
 
               {/* Avatar */}

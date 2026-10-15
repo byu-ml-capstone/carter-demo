@@ -212,21 +212,35 @@ def test_board_moves_sort_and_hide_resolved(client):
         f"/projects/{pid}/stories", params={"sort": "priority"}, headers=headers
     ).json()
     assert [row["title"] for row in ordered] == ["High one", "Low one"]
-    blocked = client.patch(
+    moved_without_sprint = client.patch(
         f"/stories/{low['id']}",
         json={"status": "Selected for Sprint", "expected_status": "Backlog"},
         headers=headers,
     )
-    assert blocked.status_code == 409
-    assert "No active sprint" in blocked.json()["detail"]
-    still = next(
-        row
-        for row in client.get(f"/projects/{pid}/stories", headers=headers).json()
-        if row["id"] == low["id"]
+    assert moved_without_sprint.status_code == 200
+    assert moved_without_sprint.json()["status"] == "Selected for Sprint"
+    assert moved_without_sprint.json()["open_sprint_id"] is None
+    assert "position" not in moved_without_sprint.json()
+    planned = client.post(f"/projects/{pid}/sprints", json={"goal": "Not yet"}, headers=headers)
+    assert planned.status_code == 201
+    moved_while_planned = client.patch(
+        f"/stories/{low['id']}",
+        json={"status": "In Progress", "expected_status": "Selected for Sprint"},
+        headers=headers,
     )
-    assert still["status"] == "Backlog"
-
-    sprint = _active_sprint(client, headers, pid)
+    assert moved_while_planned.status_code == 200
+    assert moved_while_planned.json()["status"] == "In Progress"
+    assert moved_while_planned.json()["open_sprint_id"] is None
+    restored = client.patch(
+        f"/stories/{low['id']}",
+        json={"status": "Backlog", "expected_status": "In Progress"},
+        headers=headers,
+    )
+    assert restored.status_code == 200
+    assert restored.json()["status"] == "Backlog"
+    sprint = planned.json()
+    activated = client.post(f"/sprints/{sprint['id']}/activate", headers=headers)
+    assert activated.status_code == 200
     stale = client.patch(
         f"/stories/{low['id']}",
         json={"status": "Done", "title": "should not stick", "expected_status": "Done"},

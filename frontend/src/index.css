@@ -143,11 +143,35 @@ a {
 /* ── Ticket / Team dialog sizing ── */
 .ticket,
 .team {
-  width: min(640px, calc(100% - 32px));
   border: 0;
   border-radius: 12px;
-  padding: 20px;
+  padding: 0;
   background: #ffffff;
+  box-shadow: 0 20px 30px -10px rgba(15, 23, 42, 0.08);
+}
+.ticket {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: min(640px, calc(100% - 32px));
+  height: fit-content;
+  max-height: min(720px, calc(100vh - 2rem));
+  margin: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transform: translate(-50%, -50%);
+}
+.team {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: min(420px, calc(100% - 32px));
+  height: fit-content;
+  max-height: min(720px, calc(100vh - 2rem));
+  margin: 0;
+  overflow: auto;
+  transform: translate(-50%, -50%);
 }
 .ticket::backdrop,
 .team::backdrop {
@@ -158,21 +182,63 @@ a {
 /* ── TicketModal internals (test-compatibility) ── */
 .title-input {
   flex: 1;
+  min-width: 0;
   font-weight: 600;
   border: 0;
   background: transparent;
   outline: none;
-  font-size: 1.125rem;
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 18px;
   line-height: 1.5rem;
   color: #0b1c30;
 }
+.title-input:hover,
+.title-input:focus {
+  outline: 2px solid #4b41e1;
+  outline-offset: 2px;
+}
 
-/* ── Placeholder (drag ghost in Kanban) ── */
+.dialog-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5eeff;
+  flex-shrink: 0;
+}
+.ticket-body,
+.team-body {
+  padding: 16px 20px 20px;
+}
+.ticket-body {
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── Placeholder (empty footprint left in the card's slot) ── */
 .placeholder {
-  border: 1px dashed #c5c6cd;
-  border-radius: 0.5rem;
-  min-height: 72px;
-  margin-bottom: 8px;
+  box-sizing: border-box;
+  border: 1.5px dashed #4b41e1;
+  border-radius: 0.75rem;
+  pointer-events: none;
+  background: transparent;
+}
+.story-card {
+  border: 1px solid #e2e8f0;
+}
+.story-card:hover {
+  border-color: #c5c6cd;
+}
+.type-word {
+  font-size: 12px;
+  color: #45474c;
+}
+.lifting {
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* ── Toast (fixed notification) ── */
@@ -226,10 +292,78 @@ mark {
 .mention-list button.active {
   background: #eff4ff;
 }
+.thread h3 {
+  margin: 16px 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.comments li + li {
+  margin-top: 12px;
+}
+.comments p {
+  margin: 0;
+  font-size: 14px;
+}
 .composer {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  margin-top: 12px;
+  background: #f8f9ff;
+  border: 1px solid #e5eeff;
+  border-radius: 12px;
+  padding: 12px;
+}
+.composer textarea {
+  background: #ffffff;
+  min-height: 72px;
+  padding: 8px 12px;
+  resize: vertical;
+}
+.composer .hint {
+  margin: 0;
+  font-size: 13px;
+  color: #45474c;
+}
+.composer .hint button {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: #4b41e1;
+  font-size: 13px;
+}
+.author-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+.author-row .author-picker {
+  flex: 1;
+}
+.author-picker select {
+  height: 36px;
+}
+.comment-post {
+  height: 36px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 8px;
+  background: #091426;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+}
+.comment-post:disabled {
+  background: #dce9ff;
+  color: #45474c;
+  cursor: not-allowed;
+}
+.empty-line {
+  margin: 0;
+  padding: 12px;
+  font-size: 13px;
+  color: #45474c;
+  text-align: center;
 }
 
 /* ── Report / snapshot (ReportPage) ── */
@@ -280,6 +414,56 @@ select:not([class]) {
 }
 textarea:not([class]) {
   min-height: 72px;
+}
+.ticket label,
+.team label {
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #45474c;
+}
+.ticket textarea,
+.ticket select,
+.ticket .branch-input,
+.team input {
+  background: #eff4ff;
+  border: 1px solid #c5c6cd;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #0b1c30;
+}
+.ticket textarea,
+.team textarea {
+  min-height: 72px;
+  padding: 8px 12px;
+  resize: vertical;
+}
+.ticket select,
+.ticket .branch-input,
+.team input {
+  height: 40px;
+  padding: 0 12px;
+}
+.ticket .branch-input {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.ticket textarea:focus,
+.ticket select:focus,
+.ticket .branch-input:focus,
+.team input:focus {
+  border-color: #4b41e1;
+  outline: none;
+}
+.meta-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+@media (max-width: 639px) {
+  .meta-row {
+    grid-template-columns: 1fr;
+  }
 }
 .field-error {
   color: #ba1a1a;
