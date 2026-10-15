@@ -1,8 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { ApiError, login, register } from './api'
+import { Link, useNavigate } from 'react-router-dom'
+import { ApiError, register } from './api'
 import { useSession } from './session'
-import { safeNext } from './ui'
 
 function LogoSVG({ className }: { className?: string }) {
   return (
@@ -26,11 +25,9 @@ function LogoSVG({ className }: { className?: string }) {
   )
 }
 
-export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
+export function AuthPage() {
   const { session, signIn } = useSession()
   const navigate = useNavigate()
-  const [params] = useSearchParams()
-  const next = safeNext(params.get('next'))
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -40,13 +37,12 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
 
   useEffect(() => {
     if (!session) return
-    navigate(mode === 'login' ? next : '/', { replace: true })
-  }, [mode, navigate, next, session])
+    navigate('/', { replace: true })
+  }, [navigate, session])
 
   const emailOk = email.trim().length > 0
-  const passwordOk =
-    mode === 'login' ? password.trim().length > 0 : password.length >= 8
-  const confirmOk = mode === 'login' || confirm === password
+  const passwordOk = password.length >= 8
+  const confirmOk = confirm === password
   const canSubmit = emailOk && passwordOk && confirmOk && !busy
 
   async function submit(event: FormEvent) {
@@ -55,45 +51,23 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
     setBusy(true)
     setError('')
     try {
-      const result =
-        mode === 'login'
-          ? await login(email.trim().toLowerCase(), password)
-          : await register(email.trim().toLowerCase(), password)
+      const result = await register(email.trim().toLowerCase(), password)
       signIn(result.token, result.user)
-      navigate(mode === 'login' ? next : '/', { replace: true })
+      navigate('/', { replace: true })
     } catch (caught) {
-      if (caught instanceof ApiError && caught.status === 401) {
-        setError('Email or password is wrong.')
-        setPassword('')
-      } else if (caught instanceof ApiError && caught.status === 409) {
+      if (caught instanceof ApiError && caught.status === 409) {
         setError('An account with that email already exists.')
       } else if (caught instanceof ApiError && caught.status === 400) {
         setError(caught.detail)
-      } else if (caught instanceof ApiError && caught.status === 0) {
-        setError(
-          mode === 'login'
-            ? "Couldn't sign in — try again."
-            : "Couldn't create the account — try again.",
-        )
       } else {
-        setError(
-          mode === 'login'
-            ? "Couldn't sign in — try again."
-            : "Couldn't create the account — try again.",
-        )
+        setError("Couldn't create the account — try again.")
       }
     } finally {
       setBusy(false)
     }
   }
 
-  const submitLabel = busy
-    ? mode === 'login'
-      ? 'Signing in…'
-      : 'Creating account…'
-    : mode === 'login'
-      ? 'Sign in'
-      : 'Create account'
+  const submitLabel = busy ? 'Creating account…' : 'Create account'
 
   return (
     <main
@@ -291,19 +265,6 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
                 >
                   Password
                 </label>
-                {mode === 'login' && (
-                  <a
-                    href="#forgot"
-                    style={{
-                      fontSize: '0.75rem',
-                      lineHeight: '1rem',
-                      color: 'var(--color-secondary)',
-                      textDecoration: 'none',
-                    }}
-                  >
-                    Forgot password?
-                  </a>
-                )}
               </div>
               <div
                 style={{
@@ -328,9 +289,7 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
                 <input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
-                  autoComplete={
-                    mode === 'login' ? 'current-password' : 'new-password'
-                  }
+                  autoComplete="new-password"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   placeholder="••••••••••••"
@@ -377,128 +336,80 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
               </div>
             </div>
 
-            {mode === 'register' &&
-            password.length > 0 &&
-            password.length < 8 ? (
+            {password.length > 0 && password.length < 8 ? (
               <p className="field-error">
                 Password must be at least 8 characters.
               </p>
             ) : null}
 
-            {/* Confirm password (register only) */}
-            {mode === 'register' ? (
-              <div
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.375rem',
+              }}
+            >
+              <label
+                htmlFor="confirm"
                 style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.375rem',
+                  fontSize: '0.75rem',
+                  lineHeight: '1rem',
+                  letterSpacing: '0.01em',
+                  fontWeight: 500,
+                  color: 'var(--color-on-surface-variant)',
                 }}
               >
-                <label
-                  htmlFor="confirm"
+                Confirm password
+              </label>
+              <div
+                style={{
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+              >
+                <span
+                  className="material-symbols-outlined"
+                  aria-hidden="true"
                   style={{
-                    fontSize: '0.75rem',
-                    lineHeight: '1rem',
-                    letterSpacing: '0.01em',
-                    fontWeight: 500,
-                    color: 'var(--color-on-surface-variant)',
+                    position: 'absolute',
+                    left: '0.875rem',
+                    color: 'var(--color-outline)',
+                    pointerEvents: 'none',
+                    fontSize: '18px',
                   }}
                 >
-                  Confirm password
-                </label>
-                <div
+                  lock_open
+                </span>
+                <input
+                  id="confirm"
+                  type="password"
+                  autoComplete="new-password"
+                  value={confirm}
+                  onChange={(event) => setConfirm(event.target.value)}
+                  placeholder="••••••••••••"
                   style={{
-                    position: 'relative',
-                    display: 'flex',
-                    alignItems: 'center',
+                    width: '100%',
+                    height: '2.75rem',
+                    paddingLeft: '2.5rem',
+                    paddingRight: '1rem',
+                    background: 'var(--color-surface-container-low)',
+                    color: 'var(--color-on-surface)',
+                    border: 'none',
+                    borderRadius: '0.5rem',
+                    outline: 'none',
+                    fontSize: '0.875rem',
+                    lineHeight: '1.375rem',
                   }}
-                >
-                  <span
-                    className="material-symbols-outlined"
-                    aria-hidden="true"
-                    style={{
-                      position: 'absolute',
-                      left: '0.875rem',
-                      color: 'var(--color-outline)',
-                      pointerEvents: 'none',
-                      fontSize: '18px',
-                    }}
-                  >
-                    lock_open
-                  </span>
-                  <input
-                    id="confirm"
-                    type="password"
-                    autoComplete="new-password"
-                    value={confirm}
-                    onChange={(event) => setConfirm(event.target.value)}
-                    placeholder="••••••••••••"
-                    style={{
-                      width: '100%',
-                      height: '2.75rem',
-                      paddingLeft: '2.5rem',
-                      paddingRight: '1rem',
-                      background: 'var(--color-surface-container-low)',
-                      color: 'var(--color-on-surface)',
-                      border: 'none',
-                      borderRadius: '0.5rem',
-                      outline: 'none',
-                      fontSize: '0.875rem',
-                      lineHeight: '1.375rem',
-                    }}
-                  />
-                </div>
+                />
               </div>
-            ) : null}
+            </div>
 
-            {mode === 'register' &&
-            confirm.length > 0 &&
-            confirm !== password ? (
+            {confirm.length > 0 && confirm !== password ? (
               <p className="field-error">Passwords don’t match.</p>
             ) : null}
 
             {error ? <p className="field-error">{error}</p> : null}
-
-            {/* Remember me (login only) */}
-            {mode === 'login' && (
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: '0.25rem 0',
-                }}
-              >
-                <label
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.625rem',
-                    cursor: 'pointer',
-                    userSelect: 'none',
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    defaultChecked
-                    style={{
-                      width: '1rem',
-                      height: '1rem',
-                      borderRadius: '0.25rem',
-                      cursor: 'pointer',
-                      accentColor: 'var(--color-primary)',
-                    }}
-                  />
-                  <span
-                    style={{
-                      fontSize: '0.8125rem',
-                      color: 'var(--color-on-surface-variant)',
-                    }}
-                  >
-                    Remember me on this workstation
-                  </span>
-                </label>
-              </div>
-            )}
 
             {/* Submit */}
             <button
@@ -554,35 +465,16 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
                   color: 'var(--color-on-surface-variant)',
                 }}
               >
-                {mode === 'login' ? (
-                  <>
-                    Don&apos;t have a workspace?{' '}
-                    <Link
-                      to="/sign-up"
-                      style={{
-                        color: 'var(--color-secondary)',
-                        fontWeight: 500,
-                        textDecoration: 'none',
-                      }}
-                    >
-                      Create an account
-                    </Link>
-                  </>
-                ) : (
-                  <>
-                    Already have an account?{' '}
-                    <Link
-                      to="/sign-in"
-                      style={{
-                        color: 'var(--color-secondary)',
-                        fontWeight: 500,
-                        textDecoration: 'none',
-                      }}
-                    >
-                      Already have an account
-                    </Link>
-                  </>
-                )}
+                <Link
+                  to="/"
+                  style={{
+                    color: 'var(--color-secondary)',
+                    fontWeight: 500,
+                    textDecoration: 'none',
+                  }}
+                >
+                  Back to workspace
+                </Link>
               </p>
             </div>
           </form>

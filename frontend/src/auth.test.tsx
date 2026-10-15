@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { beforeEach, describe, expect, it } from 'vitest'
@@ -19,51 +25,51 @@ function renderAuth(path: string) {
 }
 
 describe('auth', () => {
-  it('sends visitors to sign in and keeps a bearer token in memory', async () => {
+  it('opens the workspace without a sign-in page', async () => {
+    mockFetch((call) => {
+      if (pathOf(call.url) === '/projects' && call.method === 'GET')
+        return { json: [] }
+      return { status: 404, json: { detail: 'missing' } }
+    })
+    const guest = renderAuth('/projects/p1')
+    expect(guest.router.state.location.pathname).toBe('/projects/p1')
+    expect(screen.queryByLabelText('Email')).toBeNull()
+
+    cleanup()
+    const home = renderAuth('/sign-in')
+    await waitFor(() => expect(home.router.state.location.pathname).toBe('/'))
+    expect(
+      await screen.findByRole('button', { name: 'New Project' }),
+    ).toBeInTheDocument()
+    expect(screen.queryByLabelText('Email')).toBeNull()
+  })
+
+  it('creates an account and returns to the workspace', async () => {
     const calls = mockFetch((call) => {
       const path = pathOf(call.url)
       if (path === '/auth/register')
         return { status: 201, json: { token: 'reg-token', user: signedInUser } }
-      if (path === '/auth/login')
-        return { json: { token: 'log-token', user: signedInUser } }
       if (path === '/projects' && call.method === 'GET') return { json: [] }
       return { status: 404, json: { detail: 'missing' } }
     })
-    const guest = renderAuth('/projects/p1')
-    expect(
-      await screen.findByRole('heading', { name: 'My Workspace' }),
-    ).toBeInTheDocument()
-    expect(guest.router.state.location.pathname).toBe('/sign-in')
-    expect(guest.router.state.location.search).toContain('next=')
-
-    await guest.user.click(
-      screen.getByRole('link', { name: 'Create an account' }),
-    )
+    const { user } = renderAuth('/sign-up')
     fireEvent.submit(
       screen.getByRole('button', { name: 'Create account' }).closest('form')!,
     )
-    await guest.user.type(screen.getByLabelText('Email'), 'Ada@Example.com')
-    await guest.user.type(screen.getByLabelText('Password'), 'short')
+    await user.type(screen.getByLabelText('Email'), 'Ada@Example.com')
+    await user.type(screen.getByLabelText('Password'), 'short')
     expect(
       screen.getByText('Password must be at least 8 characters.'),
     ).toBeInTheDocument()
-    await guest.user.type(
-      screen.getByLabelText('Confirm password'),
-      'other-password',
-    )
+    await user.type(screen.getByLabelText('Confirm password'), 'other-password')
     expect(screen.getByText('Passwords don’t match.')).toBeInTheDocument()
-    await guest.user.clear(screen.getByLabelText('Confirm password'))
-    await guest.user.type(screen.getByLabelText('Confirm password'), 'short')
-    await guest.user.clear(screen.getByLabelText('Password'))
-    await guest.user.type(screen.getByLabelText('Password'), 'password1')
-    await guest.user.clear(screen.getByLabelText('Confirm password'))
-    await guest.user.type(
-      screen.getByLabelText('Confirm password'),
-      'password1',
-    )
-    await guest.user.click(
-      screen.getByRole('button', { name: 'Create account' }),
-    )
+    await user.clear(screen.getByLabelText('Confirm password'))
+    await user.type(screen.getByLabelText('Confirm password'), 'short')
+    await user.clear(screen.getByLabelText('Password'))
+    await user.type(screen.getByLabelText('Password'), 'password1')
+    await user.clear(screen.getByLabelText('Confirm password'))
+    await user.type(screen.getByLabelText('Confirm password'), 'password1')
+    await user.click(screen.getByRole('button', { name: 'Create account' }))
     expect(
       await screen.findByRole('button', { name: 'Sign out' }),
     ).toBeInTheDocument()
@@ -76,84 +82,21 @@ describe('auth', () => {
       expect(projectCall?.authorization).toBe('Bearer reg-token')
     })
 
-    await guest.user.click(screen.getByRole('button', { name: 'Sign out' }))
+    await user.click(screen.getByRole('button', { name: 'Sign out' }))
     expect(
-      await screen.findByRole('button', { name: 'Sign in' }),
+      await screen.findByRole('button', { name: 'New Project' }),
     ).toBeInTheDocument()
-    await guest.user.type(screen.getByLabelText('Email'), 'ada@example.com')
-    await guest.user.type(screen.getByLabelText('Password'), 'password1')
-    await guest.user.click(screen.getByRole('button', { name: 'Sign in' }))
-    expect(
-      await screen.findByRole('button', { name: 'Sign out' }),
-    ).toBeInTheDocument()
-    expect(getToken()).toBe('log-token')
-    await waitFor(() => {
-      const signedIn = calls.filter(
-        (call) => pathOf(call.url) === '/projects' && call.method === 'GET',
-      )
-      expect(signedIn.at(-1)?.authorization).toBe('Bearer log-token')
-    })
-  })
-
-  it('shows sign-in and sign-up failures', async () => {
-    let status = 401
-    mockFetch(() => {
-      if (status === 0) return { network: true }
-      return {
-        status,
-        json: { detail: status === 400 ? 'email must contain @' : 'no' },
-      }
-    })
-    const { user, router } = renderAuth('/sign-in?next=/projects/p1')
-    fireEvent.submit(document.querySelector('form')!)
-    const fill = (password: string) => {
-      fireEvent.change(screen.getByLabelText('Email'), {
-        target: { value: 'ada@example.com' },
-      })
-      fireEvent.change(screen.getByLabelText('Password'), {
-        target: { value: password },
-      })
-    }
-    fill('wrong-password')
-    await user.click(screen.getByRole('button', { name: 'Sign in' }))
-    expect(
-      await screen.findByText('Email or password is wrong.'),
-    ).toBeInTheDocument()
-    expect(screen.getByLabelText('Password')).toHaveValue('')
-
-    status = 409
-    fill('password1')
-    await user.click(screen.getByRole('button', { name: 'Sign in' }))
-    expect(
-      await screen.findByText('An account with that email already exists.'),
-    ).toBeInTheDocument()
-
-    status = 400
-    fill('password1')
-    await user.click(screen.getByRole('button', { name: 'Sign in' }))
-    expect(await screen.findByText('email must contain @')).toBeInTheDocument()
-
-    status = 0
-    fill('password1')
-    await user.click(screen.getByRole('button', { name: 'Sign in' }))
-    expect(
-      await screen.findByText("Couldn't sign in — try again."),
-    ).toBeInTheDocument()
-
-    status = 500
-    fill('password1')
-    await user.click(screen.getByRole('button', { name: 'Sign in' }))
-    expect(
-      await screen.findByText("Couldn't sign in — try again."),
-    ).toBeInTheDocument()
-    expect(router.state.location.pathname).toBe('/sign-in')
+    expect(screen.queryByLabelText('Email')).toBeNull()
   })
 
   it('shows sign-up failures', async () => {
     let status = 500
     mockFetch(() => {
       if (status === 0) return { network: true }
-      return { status, json: { detail: 'no' } }
+      return {
+        status,
+        json: { detail: status === 400 ? 'email must contain @' : 'no' },
+      }
     })
     const { user, router } = renderAuth('/sign-up')
     fireEvent.change(screen.getByLabelText('Email'), {
@@ -175,13 +118,22 @@ describe('auth', () => {
     expect(
       await screen.findByText("Couldn't create the account — try again."),
     ).toBeInTheDocument()
-    await user.click(
-      screen.getByRole('link', { name: 'Already have an account' }),
-    )
-    expect(router.state.location.pathname).toBe('/sign-in')
+
+    status = 409
+    await user.click(screen.getByRole('button', { name: 'Create account' }))
+    expect(
+      await screen.findByText('An account with that email already exists.'),
+    ).toBeInTheDocument()
+
+    status = 400
+    await user.click(screen.getByRole('button', { name: 'Create account' }))
+    expect(await screen.findByText('email must contain @')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('link', { name: 'Back to workspace' }))
+    expect(router.state.location.pathname).toBe('/')
   })
 
-  it('shows a busy label while sign-in is open', async () => {
+  it('shows a busy label while sign-up is open', async () => {
     let finish: ((value: { status: number; json: unknown }) => void) | undefined
     mockFetch(
       () =>
@@ -189,37 +141,38 @@ describe('auth', () => {
           finish = resolve
         }),
     )
-    const { user } = renderAuth('/sign-in')
+    const { user } = renderAuth('/sign-up')
     fireEvent.change(screen.getByLabelText('Email'), {
       target: { value: 'ada@example.com' },
     })
     fireEvent.change(screen.getByLabelText('Password'), {
       target: { value: 'password1' },
     })
-    await user.click(screen.getByRole('button', { name: 'Sign in' }))
-    expect(screen.getByRole('button', { name: 'Signing in…' })).toBeDisabled()
-    finish?.({ json: { token: 'token-1', user: signedInUser }, status: 200 })
+    fireEvent.change(screen.getByLabelText('Confirm password'), {
+      target: { value: 'password1' },
+    })
+    await user.click(screen.getByRole('button', { name: 'Create account' }))
+    expect(
+      screen.getByRole('button', { name: 'Creating account…' }),
+    ).toBeDisabled()
+    finish?.({ json: { token: 'token-1', user: signedInUser }, status: 201 })
     expect(
       await screen.findByRole('button', { name: 'Sign out' }),
     ).toBeInTheDocument()
   })
 
-  it('leaves the form when a session is already active', async () => {
+  it('leaves sign-up when a session is already active', async () => {
     mockFetch((call) => {
-      if (pathOf(call.url) === '/auth/login')
+      if (pathOf(call.url) === '/auth/register')
         return { json: { token: 'token-1', user: signedInUser } }
       return { json: [] }
     })
-    const { user, router } = renderAuth('/sign-in?next=/')
+    const { user, router } = renderAuth('/sign-up')
     await user.type(screen.getByLabelText('Email'), 'ada@example.com')
     await user.type(screen.getByLabelText('Password'), 'password1')
-    await user.click(screen.getByRole('button', { name: 'Sign in' }))
+    await user.type(screen.getByLabelText('Confirm password'), 'password1')
+    await user.click(screen.getByRole('button', { name: 'Create account' }))
     await screen.findByRole('button', { name: 'Sign out' })
-    await router.navigate('/sign-in')
-    await waitFor(() => expect(router.state.location.pathname).toBe('/'))
-    expect(
-      screen.getByRole('heading', { name: 'My Workspace' }),
-    ).toBeInTheDocument()
     await router.navigate('/sign-up')
     await waitFor(() => expect(router.state.location.pathname).toBe('/'))
     expect(

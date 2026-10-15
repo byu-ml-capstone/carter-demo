@@ -51,7 +51,7 @@ function renderReport(path = '/sprints/sp1/report') {
         children: [
           { path: '/sprints/:sprintId/report', element: <ReportPage /> },
           { path: '/projects/:projectId', element: <p>Board</p> },
-          { path: '/sign-in', element: <p>Sign in page</p> },
+          { path: '/', element: <p>Projects home</p> },
         ],
       },
     ],
@@ -312,7 +312,7 @@ describe('report page', () => {
 
     mode = 'auth'
     await again.user.click(screen.getByRole('button', { name: 'Try again' }))
-    expect(await screen.findByText('Sign in page')).toBeInTheDocument()
+    expect(await screen.findByText('Projects home')).toBeInTheDocument()
   })
 
   it('shows a stored draft, an empty generation, and a failed load', async () => {

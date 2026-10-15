@@ -6,54 +6,42 @@ import { routes } from './App'
 import { setToken } from './api'
 import type { Result } from './test/fetch'
 import { mockFetch, pathOf } from './test/fetch'
-import { signedInUser } from './test/login'
 
 beforeEach(() => {
   setToken(null)
 })
 
-function signIn(path = '/sign-in?next=/') {
+function openProjects() {
+  setToken('token-1')
   const user = userEvent.setup({ delay: null })
-  const router = createMemoryRouter(routes, { initialEntries: [path] })
+  const router = createMemoryRouter(routes, { initialEntries: ['/'] })
   render(<RouterProvider router={router} />)
   return { user, router }
-}
-
-async function enter(user: ReturnType<typeof userEvent.setup>) {
-  await user.type(screen.getByLabelText('Email'), 'ada@example.com')
-  await user.type(screen.getByLabelText('Password'), 'password1')
-  await user.click(screen.getByRole('button', { name: 'Sign in' }))
-  await screen.findByRole('button', { name: 'Sign out' })
 }
 
 describe('projects', () => {
   it('creates a project and explains empty, failed, and duplicate states', async () => {
     const user = userEvent.setup({ delay: null })
-    let projects: Result | Promise<Result> = new Promise(() => undefined)
+    let resolveProjects: ((value: Result) => void) | undefined
+    const projects: Result | Promise<Result> = new Promise<Result>(
+      (resolve) => {
+        resolveProjects = resolve
+      },
+    )
     let create: Result | Promise<Result> = {
       status: 409,
       json: { detail: 'duplicate' },
     }
-    let resolveProjects: ((value: Result) => void) | undefined
     let resolveCreate: ((value: Result) => void) | undefined
     const calls = mockFetch((call) => {
       const path = pathOf(call.url)
-      if (path === '/auth/login')
-        return { json: { token: 'token-1', user: signedInUser } }
       if (path === '/projects' && call.method === 'GET') return projects
       if (path === '/projects' && call.method === 'POST') return create
       return { status: 404, json: { detail: 'missing' } }
     })
-    const router = createMemoryRouter(routes, {
-      initialEntries: ['/sign-in?next=/'],
-    })
+    setToken('token-1')
+    const router = createMemoryRouter(routes, { initialEntries: ['/'] })
     render(<RouterProvider router={router} />)
-    await user.type(screen.getByLabelText('Email'), 'ada@example.com')
-    await user.type(screen.getByLabelText('Password'), 'password1')
-    projects = new Promise<Result>((resolve) => {
-      resolveProjects = resolve
-    })
-    await user.click(screen.getByRole('button', { name: 'Sign in' }))
     expect(await screen.findByText('Loading projects…')).toBeInTheDocument()
     resolveProjects?.({ json: [] })
     expect(await screen.findByText('No projects yet.')).toBeInTheDocument()
@@ -135,53 +123,46 @@ describe('projects', () => {
     )
   })
 
-  it('sends the visitor to sign in when creating is unauthorized', async () => {
+  it('stays on the workspace when creating is unauthorized', async () => {
     mockFetch((call) => {
-      if (pathOf(call.url) === '/auth/login')
-        return { json: { token: 'token-1', user: signedInUser } }
       if (pathOf(call.url) === '/projects' && call.method === 'POST') {
         return { status: 401, json: { detail: 'Sign in required.' } }
       }
       return { json: [] }
     })
-    const { user } = signIn()
-    await enter(user)
-    await user.click(screen.getByRole('button', { name: 'New Project' }))
+    const { user } = openProjects()
+    await user.click(await screen.findByRole('button', { name: 'New Project' }))
     fireEvent.change(screen.getByLabelText('Name'), {
       target: { value: 'Capstone' },
     })
     await user.click(screen.getByRole('button', { name: 'Create project' }))
-    expect(await screen.findByLabelText('Email')).toBeInTheDocument()
+    expect(await screen.findByText('Your session ended.')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Email')).toBeNull()
   })
 
   it('explains a failed load and retries', async () => {
     let projects: Result = { status: 500, json: { detail: 'down' } }
     mockFetch((call) => {
-      if (pathOf(call.url) === '/auth/login')
-        return { json: { token: 'token-1', user: signedInUser } }
       if (pathOf(call.url) === '/projects') return projects
       return { json: [] }
     })
-    const { user } = signIn()
-    await enter(user)
+    const { user } = openProjects()
     expect(
       await screen.findByText(/Couldn't load projects/),
     ).toBeInTheDocument()
     projects = { status: 401, json: { detail: 'Sign in required.' } }
     await user.click(screen.getByRole('button', { name: 'Try again' }))
-    expect(await screen.findByLabelText('Email')).toBeInTheDocument()
+    expect(await screen.findByText('Your session ended.')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Email')).toBeNull()
   })
 
   it('retries a failed load into an empty list', async () => {
     let projects: Result = { status: 500, json: { detail: 'down' } }
     mockFetch((call) => {
-      if (pathOf(call.url) === '/auth/login')
-        return { json: { token: 'token-1', user: signedInUser } }
       if (pathOf(call.url) === '/projects') return projects
       return { json: [] }
     })
-    const { user } = signIn()
-    await enter(user)
+    const { user } = openProjects()
     expect(
       await screen.findByRole('button', { name: 'Try again' }),
     ).toBeInTheDocument()
@@ -192,19 +173,11 @@ describe('projects', () => {
 
   it('rejects a name that is too long', async () => {
     const user = userEvent.setup({ delay: null })
-    mockFetch((call) => {
-      if (pathOf(call.url) === '/auth/login')
-        return { json: { token: 'token-1', user: signedInUser } }
-      return { json: [] }
-    })
-    const router = createMemoryRouter(routes, {
-      initialEntries: ['/sign-in?next=/'],
-    })
+    mockFetch(() => ({ json: [] }))
+    setToken('token-1')
+    const router = createMemoryRouter(routes, { initialEntries: ['/'] })
     render(<RouterProvider router={router} />)
-    await user.type(screen.getByLabelText('Email'), 'ada@example.com')
-    await user.type(screen.getByLabelText('Password'), 'password1')
-    await user.click(screen.getByRole('button', { name: 'Sign in' }))
-    await screen.findByRole('button', { name: 'Sign out' })
+    await screen.findByRole('button', { name: 'New Project' })
     await user.click(screen.getByRole('button', { name: 'New Project' }))
     const name = await screen.findByLabelText('Name')
     fireEvent.change(name, { target: { value: 'x'.repeat(101) } })
