@@ -117,7 +117,7 @@ export const NO_BLOCKERS = 'No blockers were recorded for this sprint'
 export const NONE_COMPLETED = 'No stories were completed this sprint'
 export const NO_FACULTY_NOTES = 'No faculty notes recorded'
 export const EMPTY_SPRINT_DETAIL =
-  "This sprint had no stories, so there's nothing to report"
+  "This project has no stories, so there's nothing to report"
 
 export const EMPTY_REPORT = (): ReportFields => ({
   sprint_goal: '',

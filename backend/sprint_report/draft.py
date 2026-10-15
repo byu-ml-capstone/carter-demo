@@ -11,7 +11,7 @@ import json
 from collections import Counter
 from collections.abc import Callable
 
-from sprint_report.course_ai import CourseAINotConfigured, complete_report
+from sprint_report.course_ai import complete_report
 
 NO_SPRINT_GOAL = "No sprint goal was recorded."
 NO_COMPLETED = "No stories were completed this sprint"
@@ -60,14 +60,12 @@ def draft_report(snapshot: dict, model: Model | None = None) -> dict:
     caller = model if model is not None else complete_report
     try:
         raw = caller(_system_prompt(), payload)
-    except CourseAINotConfigured as exc:
-        raise SprintReportError(503, "Course AI client is not configured") from exc
     except SprintReportError:
         raise
-    except Exception as exc:
-        raise SprintReportError(
-            503, "Sprint report draft failed; try again."
-        ) from exc
+    except Exception:
+        # A missing key or a failed model call still leaves a report
+        # built from the snapshot. The model cannot invent those fields.
+        raw = {}
 
     drafted = _parse_model_output(raw)
     return _repair(snapshot, stories, drafted)

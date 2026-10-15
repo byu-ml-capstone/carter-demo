@@ -297,6 +297,44 @@ def _coerce_draft(raw, snapshot: dict) -> dict:
     return content
 
 
+@app.post("/projects/{project_id}/report/draft")
+def draft_project_report(
+    project_id: str,
+    body: CloseIn | None = None,
+    _user: dict = Depends(require_user),
+):
+    notes = None if body is None else normalize_faculty_notes(body.faculty_notes)
+    snapshot = dao.project_report_snapshot(project_id, notes)
+    drafter = current_drafter()
+    if drafter is None:
+        raise AppError(503, "Sprint report drafter is not configured.")
+    try:
+        raw = drafter(snapshot)
+    except AppError:
+        raise
+    except Exception as exc:
+        status = getattr(exc, "status_code", None)
+        detail = getattr(exc, "detail", None)
+        if isinstance(status, int) and isinstance(detail, str):
+            raise AppError(status, detail) from None
+        log.warning("project report draft failed")
+        raise AppError(502, "Sprint report draft failed.") from None
+    content = _coerce_draft(raw, snapshot)
+    generated_at = now()
+    dao.save_project_draft(project_id, content, generated_at)
+    return {"draft_content": content, "generated_at": generated_at}
+
+
+@app.put("/projects/{project_id}/report")
+def save_project_report(project_id: str, body: ReportIn, _user: dict = Depends(require_user)):
+    return dao.save_project_final(project_id, _final_content(body.final_content), body.reviewed_by)
+
+
+@app.get("/projects/{project_id}/report")
+def get_project_report(project_id: str, _user: dict = Depends(require_user)):
+    return dao.get_project_report(project_id)
+
+
 @app.post("/sprints/{sprint_id}/report/draft")
 def draft_sprint_report(sprint_id: str, _user: dict = Depends(require_user)):
     snapshot = dao.report_snapshot(sprint_id)

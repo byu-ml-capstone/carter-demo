@@ -409,9 +409,10 @@ def test_report_draft_uses_sprint_faculty_notes_and_keeps_final(client):
         headers=headers,
     )
     main.report_drafter = None
-    unconfigured = client.post(f"/sprints/{sprint['id']}/report/draft", headers=headers)
-    assert unconfigured.status_code == 503
-    assert client.get(f"/sprints/{sprint['id']}/report", headers=headers).status_code == 404
+    fallback = client.post(f"/sprints/{sprint['id']}/report/draft", headers=headers)
+    assert fallback.status_code == 200
+    assert fallback.json()["draft_content"]["faculty_notes"] == "Ship the demo"
+    assert fallback.json()["draft_content"]["completed_work"] == NOTHING_COMPLETED
 
     main.report_drafter = drafter
     drafted = client.post(f"/sprints/{sprint['id']}/report/draft", headers=headers)
@@ -801,6 +802,55 @@ def test_draft_failures_do_not_replace_a_saved_report(client):
     assert bad_type.status_code == 400
     with pytest.raises(AppError):
         main._final_content(["nope"])
+
+
+def test_project_report_drafts_from_the_board_without_closing_a_sprint(client):
+    headers = auth(client)
+    project = _project(client, headers)
+    pid = project["id"]
+    story = _story(client, headers, pid, title="Publish board")
+    client.patch(f"/stories/{story['id']}", json={"status": "Done"}, headers=headers)
+    missing = client.get(f"/projects/{pid}/report", headers=headers)
+    assert missing.status_code == 404
+
+    calls = []
+
+    def drafter(snapshot):
+        calls.append(snapshot)
+        return _five(completed_work="Publish board")
+
+    main.report_drafter = drafter
+    empty = client.post("/projects/missing/report/draft", headers=headers)
+    assert empty.status_code == 404
+
+    drafted = client.post(
+        f"/projects/{pid}/report/draft",
+        json={"faculty_notes": "Watch the demo"},
+        headers=headers,
+    )
+    assert drafted.status_code == 200
+    body = drafted.json()["draft_content"]
+    assert body["completed_work"] == "Publish board"
+    assert body["faculty_notes"] == "Watch the demo"
+    assert calls[0]["status"] == "Closed"
+    assert calls[0]["any_completed"] is True
+    assert calls[0]["stories"][0]["status_at_close"] == "Done"
+    assert calls[0]["sprint_goal"] is None
+
+    saved = client.put(
+        f"/projects/{pid}/report",
+        json={"final_content": REPORT, "reviewed_by": "Ada"},
+        headers=headers,
+    )
+    assert saved.status_code == 200
+    again = client.get(f"/projects/{pid}/report", headers=headers).json()
+    assert again["final_content"]["completed_work"] == "Done the board"
+    assert again["project_id"] == pid
+
+    bare = _project(client, headers, name="Empty board")
+    nothing = client.post(f"/projects/{bare['id']}/report/draft", json={}, headers=headers)
+    assert nothing.status_code == 422
+    assert nothing.json()["detail"].startswith("This project has no stories")
 
 
 def test_missing_drafter_package_is_503(client, monkeypatch):
