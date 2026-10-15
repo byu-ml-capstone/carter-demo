@@ -7,6 +7,7 @@ import {
   logout,
   normalizeReport,
   register,
+  resolveApiOrigin,
   setToken,
   setUnauthorizedHandler,
 } from './api'
@@ -15,6 +16,66 @@ import { mockFetch } from './test/fetch'
 beforeEach(() => {
   setToken(null)
   setUnauthorizedHandler(null)
+})
+
+describe('resolveApiOrigin', () => {
+  const page = {
+    protocol: 'https:',
+    host: 'carter-demo.ml-capstone.cs.byu.edu',
+  }
+
+  it('uses the local API when the raw origin is unset or blank', () => {
+    expect(resolveApiOrigin(undefined, page)).toBe('http://127.0.0.1:8000')
+    expect(resolveApiOrigin(null, null)).toBe('http://127.0.0.1:8000')
+    expect(resolveApiOrigin('', page)).toBe('http://127.0.0.1:8000')
+    expect(resolveApiOrigin('   ', null)).toBe('http://127.0.0.1:8000')
+  })
+
+  it('adds the page scheme to a bare host', () => {
+    expect(
+      resolveApiOrigin('api.example.com', {
+        protocol: 'https:',
+        host: 'app.example.com',
+      }),
+    ).toBe('https://api.example.com')
+    expect(
+      resolveApiOrigin('api.example.com', {
+        protocol: 'http:',
+        host: 'app.example.com',
+      }),
+    ).toBe('http://api.example.com')
+    expect(resolveApiOrigin('api.example.com:8443', null)).toBe(
+      'http://api.example.com:8443',
+    )
+  })
+
+  it('stays relative when the host is the page host', () => {
+    expect(resolveApiOrigin('carter-demo.ml-capstone.cs.byu.edu', page)).toBe(
+      '',
+    )
+    expect(
+      resolveApiOrigin('https://carter-demo.ml-capstone.cs.byu.edu/', page),
+    ).toBe('')
+  })
+
+  it('keeps an absolute origin on another host and strips trailing slashes', () => {
+    expect(resolveApiOrigin('https://api.example.com///', page)).toBe(
+      'https://api.example.com',
+    )
+    expect(
+      resolveApiOrigin('http://127.0.0.1:8000/', {
+        protocol: 'http:',
+        host: 'localhost:43123',
+      }),
+    ).toBe('http://127.0.0.1:8000')
+  })
+
+  it('falls back when the origin is not a URL', () => {
+    expect(resolveApiOrigin('http://', page)).toBe('')
+    expect(resolveApiOrigin('http://', null)).toBe('http://127.0.0.1:8000')
+    expect(resolveApiOrigin('not a host', page)).toBe('')
+    expect(resolveApiOrigin('not a host', null)).toBe('http://127.0.0.1:8000')
+  })
 })
 
 describe('api', () => {

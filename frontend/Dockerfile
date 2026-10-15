@@ -7,6 +7,7 @@ RUN npm ci
 
 COPY . .
 
+# A bare host must not be baked as a path.
 ARG VITE_API_ORIGIN=
 ENV VITE_API_ORIGIN=$VITE_API_ORIGIN
 
