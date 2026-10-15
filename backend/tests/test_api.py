@@ -221,9 +221,7 @@ def test_board_moves_sort_and_hide_resolved(client):
     assert moved_without_sprint.json()["status"] == "Selected for Sprint"
     assert moved_without_sprint.json()["open_sprint_id"] is None
     assert "position" not in moved_without_sprint.json()
-    planned = client.post(
-        f"/projects/{pid}/sprints", json={"goal": "Not yet"}, headers=headers
-    )
+    planned = client.post(f"/projects/{pid}/sprints", json={"goal": "Not yet"}, headers=headers)
     assert planned.status_code == 201
     moved_while_planned = client.patch(
         f"/stories/{low['id']}",
