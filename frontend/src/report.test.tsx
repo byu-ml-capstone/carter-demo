@@ -407,9 +407,10 @@ describe('report page', () => {
     ).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Close' }))
     await user.selectOptions(screen.getByLabelText('Your name'), 'ann')
-    fireEvent.change(screen.getByPlaceholderText('Write a comment'), {
-      target: { value: 'Looks good' },
-    })
+    fireEvent.change(
+      screen.getByPlaceholderText('Write a comment or tag a teammate'),
+      { target: { value: 'Looks good' } },
+    )
     await user.click(screen.getByRole('button', { name: 'Post' }))
     expect(await screen.findByText('Looks good')).toBeInTheDocument()
   })

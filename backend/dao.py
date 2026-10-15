@@ -9,7 +9,6 @@ from auth import hash_password, new_token, verify_password
 from db import Database, now
 from domain import (
     ALREADY_MOVED,
-    NO_ACTIVE,
     PRIORITIES,
     STATUSES,
     TYPES,
@@ -351,7 +350,7 @@ class WorkspaceDAO:
                 (story["project_id"],),
             ).fetchone()
             if active is None:
-                raise AppError(409, NO_ACTIVE)
+                return
             existing = conn.execute(
                 """
                 SELECT ss.sprint_id

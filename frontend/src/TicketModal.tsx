@@ -106,14 +106,7 @@ export function TicketModal({
         if (event.target === dialogRef.current) onClose()
       }}
     >
-      <header
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          marginBottom: '1rem',
-        }}
-      >
+      <header className="dialog-header">
         <TypeIcon type={story.type} />
         <input
           className="title-input"
@@ -141,12 +134,14 @@ export function TicketModal({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            width: '28px',
+            height: '28px',
             background: 'none',
             border: 'none',
             borderRadius: '0.25rem',
             color: 'var(--color-on-surface-variant)',
             cursor: 'pointer',
-            padding: '0.25rem',
+            padding: 0,
             flexShrink: 0,
           }}
         >
@@ -159,6 +154,7 @@ export function TicketModal({
           </span>
         </button>
       </header>
+      <div className="ticket-body">
       <label>
         Description
         <textarea
@@ -225,6 +221,8 @@ export function TicketModal({
       <label>
         GitHub branch reference
         <input
+          className="branch-input"
+          placeholder="branch name, optional"
           value={branch}
           onChange={(event) => {
             setBranch(event.target.value)
@@ -249,6 +247,7 @@ export function TicketModal({
         onPosted={onPosted}
         onOpenTeam={onOpenTeam}
       />
+      </div>
     </dialog>
   )
 }

@@ -65,7 +65,6 @@ export function WorkspacePage() {
   const [priority, setPriority] = useState<Priority>('Medium')
   const [storyType, setStoryType] = useState<StoryType>('Feature')
   const [draggingId, setDraggingId] = useState<string | null>(null)
-  const [hoverStatus, setHoverStatus] = useState<Status | null>(null)
   const [inflight, setInflight] = useState<string | null>(null)
   const [menuFor, setMenuFor] = useState<string | null>(null)
 
@@ -146,8 +145,8 @@ export function WorkspacePage() {
 
   function columnStories(status: Status) {
     const rows =
-      status === 'Backlog'
-        ? stories.filter((story) => story.status === 'Backlog')
+      status === 'Backlog' || !active
+        ? stories.filter((story) => story.status === status)
         : stories.filter(
             (story) => activeIds.has(story.id) && story.status === status,
           )
@@ -191,16 +190,19 @@ export function WorkspacePage() {
         current.map((item) => (item.id === updated.id ? updated : item)),
       )
     } catch (error) {
-      setStories(previous)
-      setActiveStories(previousActive)
+      const noSprint =
+        error instanceof ApiError &&
+        error.status === 409 &&
+        (error.detail === NO_ACTIVE ||
+          error.detail.toLowerCase().includes('no active sprint'))
+      if (!noSprint) {
+        setStories(previous)
+        setActiveStories(previousActive)
+      }
       if (error instanceof ApiError && error.status === 401) return
+      if (noSprint) return
       if (error instanceof ApiError && error.status === 409) {
         if (
-          error.detail === NO_ACTIVE ||
-          error.detail.toLowerCase().includes('no active sprint')
-        ) {
-          toast(NO_ACTIVE)
-        } else if (
           error.detail === ALREADY ||
           error.detail.toLowerCase().includes('already moved')
         ) {
@@ -220,7 +222,6 @@ export function WorkspacePage() {
   function dropOn(storyId: string, clientX: number, clientY: number) {
     const story = stories.find((item) => item.id === storyId)
     setDraggingId(null)
-    setHoverStatus(null)
     if (!story) return
     const element = document.elementFromPoint(clientX, clientY)
     const column = element?.closest<HTMLElement>('[data-column]')
@@ -316,10 +317,6 @@ export function WorkspacePage() {
       : stories.filter((s) => active && s.open_sprint_id === active.id)
   const doneCount = sprintStories.filter((s) => s.status === 'Done').length
   const totalCount = sprintStories.length
-  const progressPct =
-    totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0
-  const velocity = doneCount
-  const dashArray = `${progressPct}, 100`
 
   if (loading) {
     return (
@@ -397,14 +394,14 @@ export function WorkspacePage() {
     )
   }
 
-  const sprintColumnsBlocked = !active
-
   return (
     <main
       style={{
         width: '100%',
         minHeight: 'calc(100vh - 4rem)',
-        background: 'var(--color-surface)',
+        background: active
+          ? 'var(--color-surface-container)'
+          : 'var(--color-surface)',
         display: 'flex',
         flexDirection: 'column',
       }}
@@ -568,159 +565,6 @@ export function WorkspacePage() {
             </div>
           </div>
 
-          {/* Sprint telemetry bar */}
-          {active && (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '1.5rem',
-                padding: '0.75rem 1rem',
-                background: 'var(--color-surface-container-lowest)',
-                borderRadius: '0.75rem',
-                border: '1px solid var(--color-outline-variant)',
-              }}
-            >
-              {/* SVG ring */}
-              <div style={{ position: 'relative', flexShrink: 0 }}>
-                <svg
-                  style={{
-                    width: '2.25rem',
-                    height: '2.25rem',
-                    transform: 'rotate(-90deg)',
-                  }}
-                  viewBox="0 0 36 36"
-                >
-                  <path
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                    fill="none"
-                    stroke="var(--color-surface-container)"
-                    strokeWidth="3"
-                  />
-                  <path
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                    fill="none"
-                    stroke="var(--color-secondary)"
-                    strokeDasharray={dashArray}
-                    strokeLinecap="round"
-                    strokeWidth="3.2"
-                  />
-                </svg>
-                <span
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontFamily: 'var(--font-family-mono)',
-                    fontSize: '0.5625rem',
-                    fontWeight: 600,
-                    color: 'var(--color-on-surface)',
-                  }}
-                >
-                  {progressPct}%
-                </span>
-              </div>
-
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.125rem',
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: '0.875rem',
-                    fontWeight: 500,
-                    color: 'var(--color-on-surface)',
-                  }}
-                >
-                  {sprintLabel('Active', active.goal)}
-                </span>
-                <span
-                  style={{
-                    fontFamily: 'var(--font-family-mono)',
-                    fontSize: '0.6875rem',
-                    color: 'var(--color-on-surface-variant)',
-                  }}
-                >
-                  {doneCount} of {totalCount} completed
-                </span>
-              </div>
-
-              <div
-                style={{
-                  width: '1px',
-                  height: '2rem',
-                  background: 'var(--color-outline-variant)',
-                }}
-              />
-
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.125rem',
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: '0.75rem',
-                    color: 'var(--color-on-surface-variant)',
-                  }}
-                >
-                  Days remaining
-                </span>
-                <span
-                  style={{
-                    fontFamily: 'var(--font-family-mono)',
-                    fontSize: '0.875rem',
-                    fontWeight: 600,
-                    color: 'var(--color-on-surface)',
-                  }}
-                >
-                  —
-                </span>
-              </div>
-
-              <div
-                style={{
-                  width: '1px',
-                  height: '2rem',
-                  background: 'var(--color-outline-variant)',
-                }}
-              />
-
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.125rem',
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: '0.75rem',
-                    color: 'var(--color-on-surface-variant)',
-                  }}
-                >
-                  Velocity
-                </span>
-                <span
-                  style={{
-                    fontFamily: 'var(--font-family-mono)',
-                    fontSize: '0.875rem',
-                    fontWeight: 600,
-                    color: 'var(--color-on-surface)',
-                  }}
-                >
-                  {velocity}
-                </span>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Controls toolbar */}
@@ -891,6 +735,36 @@ export function WorkspacePage() {
             Add Story
           </button>
         </div>
+
+        {active ? (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              padding: '0.75rem 1rem',
+              background: 'var(--color-surface-container-lowest)',
+              borderRadius: '0.75rem',
+            }}
+          >
+            {active.goal?.trim() ? (
+              <span
+                style={{ fontSize: '0.875rem', color: 'var(--color-on-surface)' }}
+              >
+                {active.goal.trim()}
+              </span>
+            ) : null}
+            <span
+              style={{
+                fontFamily: 'var(--font-family-mono)',
+                fontSize: '13px',
+                color: '#45474c',
+              }}
+            >
+              {doneCount} of {totalCount} done
+            </span>
+          </div>
+        ) : null}
 
         {/* Sprint management strips */}
         {confirmClose && active ? (
@@ -1127,9 +1001,10 @@ export function WorkspacePage() {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
+            gridTemplateColumns: 'repeat(4, minmax(240px, 1fr))',
             gap: 'var(--spacing-gutter)',
             alignItems: 'start',
+            overflowX: 'auto',
           }}
         >
           {STATUSES.map((status) => {
@@ -1137,45 +1012,24 @@ export function WorkspacePage() {
             const visible = hideResolved && status === 'Done' ? [] : rows
             const hiddenCount =
               hideResolved && status === 'Done' ? rows.length : 0
-            const legalTarget = status === 'Backlog' || !sprintColumnsBlocked
-            const highlighted =
-              draggingId !== null && hoverStatus === status && legalTarget
-            const dragged = stories.find((story) => story.id === draggingId)
-            const slot =
-              dragged && highlighted && dragged.status !== status
-                ? sortStories(
-                    [...rows, { ...dragged, status }],
-                    sortMode,
-                  ).findIndex((story) => story.id === dragged.id)
-                : -1
 
             const columnDotColor: Record<Status, string> = {
               Backlog: 'var(--color-outline)',
               'Selected for Sprint': 'var(--color-secondary)',
               'In Progress': 'var(--color-secondary-container)',
-              Done: 'var(--color-primary)',
+              Done: '#3b7a57',
             }
 
             return (
               <section
                 key={status}
                 data-column={status}
-                className={highlighted ? 'target' : ''}
-                onPointerMove={() => {
-                  if (draggingId) setHoverStatus(status)
-                }}
                 style={{
-                  background: highlighted
-                    ? 'color-mix(in srgb, var(--color-secondary-fixed) 20%, transparent)'
-                    : 'var(--color-surface-container-low)',
+                  background: 'var(--color-surface-container-low)',
                   borderRadius: '0.75rem',
                   padding: '0.5rem',
-                  minHeight: '580px',
+                  minHeight: '10rem',
                   boxShadow: '0 1px 3px rgba(15,23,42,0.04)',
-                  outline: highlighted
-                    ? '2px solid var(--color-secondary)'
-                    : 'none',
-                  transition: 'background 0.1s, outline 0.1s',
                 }}
               >
                 {/* Column header */}
@@ -1260,113 +1114,21 @@ export function WorkspacePage() {
                   ) : null}
                 </header>
 
-                {/* Blocked columns banner */}
-                {status !== 'Backlog' && sprintColumnsBlocked ? (
-                  <p
-                    style={{
-                      margin: '0 0 0.5rem',
-                      padding: '0.5rem',
-                      background: 'var(--color-surface-container)',
-                      borderRadius: '0.5rem',
-                      fontSize: '0.75rem',
-                      color: 'var(--color-on-surface-variant)',
-                    }}
-                  >
-                    {planned
-                      ? 'No active sprint — activate it to start moving stories here.'
-                      : 'No active sprint — plan one to start moving stories here.'}
-                  </p>
-                ) : null}
-
                 {/* Empty states */}
                 {visible.length === 0 && hiddenCount === 0 ? (
-                  status === 'Backlog' ? (
-                    <>
-                      <p
-                        style={{
-                          margin: '0.5rem 0',
-                          padding: '0.75rem',
-                          fontSize: '0.8125rem',
-                          color: 'var(--color-on-surface-variant)',
-                          textAlign: 'center',
-                        }}
-                      >
-                        No stories yet — add one
-                      </p>
-                      <div
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'center',
-                          paddingBottom: '0.5rem',
-                        }}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => setAdding(true)}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.375rem',
-                            height: '2rem',
-                            padding: '0 0.75rem',
-                            background: 'var(--color-secondary)',
-                            color: 'var(--color-on-secondary)',
-                            border: 'none',
-                            borderRadius: '0.5rem',
-                            fontSize: '0.8125rem',
-                            fontWeight: 500,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          Add story
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <p
-                      style={{
-                        margin: '0.5rem 0',
-                        padding: '0.75rem',
-                        fontSize: '0.8125rem',
-                        color: 'var(--color-on-surface-variant)',
-                        textAlign: 'center',
-                      }}
-                    >
-                      No stories yet.
-                    </p>
-                  )
+                  <p className="empty-line">No stories yet.</p>
                 ) : null}
 
                 {hiddenCount > 0 && visible.length === 0 ? (
-                  <p
-                    style={{
-                      margin: '0.5rem 0',
-                      padding: '0.75rem',
-                      fontSize: '0.8125rem',
-                      color: 'var(--color-on-surface-variant)',
-                      textAlign: 'center',
-                    }}
-                  >
+                  <p className="empty-line">
                     Resolved stories are hidden. Turn off Hide resolved to see
                     them.
                   </p>
                 ) : null}
 
-                {/* Story cards */}
-                {visible.map((story, index) => (
-                  <div key={story.id}>
-                    {slot === index ? (
-                      <div
-                        className="insert-line"
-                        style={{
-                          height: '2px',
-                          background: 'var(--color-secondary)',
-                          borderRadius: '9999px',
-                          margin: '0 0.25rem 0.5rem',
-                        }}
-                      />
-                    ) : null}
-                    <StoryCard
+                {visible.map((story) => (
+                  <StoryCard
+                    key={story.id}
                       story={story}
                       dragging={draggingId === story.id}
                       inflight={inflight === story.id}
@@ -1387,19 +1149,7 @@ export function WorkspacePage() {
                         void moveStory(story, status)
                       }}
                     />
-                  </div>
                 ))}
-                {slot === visible.length && slot >= 0 ? (
-                  <div
-                    className="insert-line"
-                    style={{
-                      height: '2px',
-                      background: 'var(--color-secondary)',
-                      borderRadius: '9999px',
-                      margin: '0 0.25rem',
-                    }}
-                  />
-                ) : null}
               </section>
             )
           })}
@@ -1713,7 +1463,15 @@ export function WorkspacePage() {
             setComments((current) => [...current, comment])
           }
           onOpenTeam={() => setTeamOpen(true)}
-          onClose={() => setOpenId(null)}
+          onClose={() => {
+            const id = openStory.id
+            setOpenId(null)
+            requestAnimationFrame(() => {
+              document
+                .querySelector<HTMLElement>(`[data-story-id="${id}"]`)
+                ?.focus()
+            })
+          }}
           onStory={(updated) =>
             setStories((current) =>
               current.map((story) =>
@@ -1769,24 +1527,66 @@ function StoryCard({
   onToggleMenu: () => void
   onMove: (status: Status) => void
 }) {
+  const [holding, setHolding] = useState(false)
+  const [flight, setFlight] = useState<{
+    left: number
+    top: number
+    width: number
+    height: number
+  } | null>(null)
+
   function pointerDown(event: ReactPointerEvent) {
     if (event.button !== 0) return
     if ((event.target as HTMLElement).closest('[data-no-drag]')) return
+    event.preventDefault()
+    window.getSelection()?.removeAllRanges()
+    setHolding(true)
+    const card = event.currentTarget as HTMLElement
+    const blockSelect = (select: Event) => select.preventDefault()
+    document.addEventListener('selectstart', blockSelect)
     const startX = event.clientX
     const startY = event.clientY
     let moved = false
+    let offsetX = 0
+    let offsetY = 0
     function move(pointer: globalThis.PointerEvent) {
       if (
         !moved &&
         Math.hypot(pointer.clientX - startX, pointer.clientY - startY) > 6
       ) {
         moved = true
+        const rect = card.getBoundingClientRect()
+        offsetX = startX - rect.left
+        offsetY = startY - rect.top
+        setFlight({
+          left: rect.left,
+          top: rect.top,
+          width: rect.width,
+          height: rect.height,
+        })
+        window.getSelection()?.removeAllRanges()
         onDragStart()
+      }
+      if (moved) {
+        window.getSelection()?.removeAllRanges()
+        setFlight((current) =>
+          current
+            ? {
+                ...current,
+                left: pointer.clientX - offsetX,
+                top: pointer.clientY - offsetY,
+              }
+            : current,
+        )
       }
     }
     function up(pointer: globalThis.PointerEvent) {
       window.removeEventListener('pointermove', move)
       window.removeEventListener('pointerup', up)
+      document.removeEventListener('selectstart', blockSelect)
+      window.getSelection()?.removeAllRanges()
+      setHolding(false)
+      setFlight(null)
       if (moved) onDragEnd(pointer.clientX, pointer.clientY)
       else onOpen()
     }
@@ -1797,30 +1597,40 @@ function StoryCard({
   const storyId = `#${story.id.slice(-6).toUpperCase()}`
 
   return (
+    <div style={{ marginBottom: '0.5rem' }}>
+      {flight ? (
+        <div
+          className="placeholder"
+          style={{ height: flight.height }}
+          aria-hidden="true"
+        />
+      ) : null}
     <article
-      className={dragging ? 'lifting' : ''}
+      data-story-id={story.id}
+      tabIndex={-1}
+      className={dragging ? 'story-card lifting' : 'story-card'}
       style={{
-        background:
-          story.status === 'Done'
-            ? 'color-mix(in srgb, var(--color-surface-container-lowest) 80%, transparent)'
-            : 'var(--color-surface-container-lowest)',
+        background: 'var(--color-surface-container-lowest)',
         borderRadius: '0.75rem',
-        padding: 'var(--spacing-space-md)',
-        marginBottom: '0.5rem',
-        boxShadow: dragging
+        padding: '1rem',
+        marginBottom: 0,
+        boxShadow: flight
           ? '0 20px 30px -10px rgba(15,23,42,0.12)'
-          : '0 1px 2px rgba(15,23,42,0.04)',
-        cursor: dragging ? 'grabbing' : 'grab',
+          : '0 1px 2px rgba(15, 23, 42, 0.04)',
+        cursor: flight ? 'grabbing' : 'grab',
+        userSelect: holding || dragging ? 'none' : 'auto',
+        WebkitUserSelect: holding || dragging ? 'none' : 'auto',
         opacity: inflight ? 0.5 : 1,
-        transform: dragging ? 'scale(1.02)' : 'none',
-        zIndex: dragging ? 10 : 'auto',
-        transition: 'opacity 0.15s, box-shadow 0.15s',
-        position: 'relative',
+        pointerEvents: flight ? 'none' : 'auto',
+        position: flight ? 'fixed' : 'relative',
+        left: flight?.left,
+        top: flight?.top,
+        width: flight?.width,
+        zIndex: flight ? 40 : 'auto',
+        transition: flight ? undefined : 'opacity 0.15s, box-shadow 0.15s',
       }}
       onPointerDown={pointerDown}
     >
-      {dragging ? <div className="placeholder" /> : null}
-
       {/* Card header */}
       <div
         style={{
@@ -1850,21 +1660,23 @@ function StoryCard({
             {storyId}
           </span>
           <TypeIcon type={story.type} />
+          <span className="type-word">{story.type}</span>
         </div>
 
-        {story.status === 'Done' ? (
-          <span
-            className="material-symbols-outlined"
-            aria-hidden="true"
-            style={{
-              fontSize: '16px',
-              color: 'var(--color-secondary)',
-              flexShrink: 0,
-            }}
-          >
-            check_circle
-          </span>
-        ) : (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+          {story.status === 'Done' ? (
+            <span
+              className="material-symbols-outlined"
+              aria-hidden="true"
+              style={{
+                fontSize: '16px',
+                color: '#3b7a57',
+                flexShrink: 0,
+              }}
+            >
+              check_circle
+            </span>
+          ) : null}
           <button
             type="button"
             data-no-drag
@@ -1892,7 +1704,7 @@ function StoryCard({
               more_horiz
             </span>
           </button>
-        )}
+        </div>
       </div>
 
       {/* Move menu */}
@@ -2018,6 +1830,7 @@ function StoryCard({
         </p>
       ) : null}
     </article>
+    </div>
   )
 }
 
@@ -2074,14 +1887,7 @@ export function TeamDialog({
         onClose()
       }}
     >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: '1rem',
-        }}
-      >
+      <div className="dialog-header">
         <h2
           style={{
             margin: 0,
@@ -2119,6 +1925,12 @@ export function TeamDialog({
         </button>
       </div>
 
+      <div className="team-body">
+      {members.length === 0 ? (
+        <p className="empty-line" style={{ textAlign: 'left', padding: '0 0 12px' }}>
+          No teammates yet.
+        </p>
+      ) : (
       <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1rem' }}>
         {members.map((member) => (
           <li
@@ -2154,6 +1966,7 @@ export function TeamDialog({
           </li>
         ))}
       </ul>
+      )}
 
       <form
         onSubmit={(event) => void add(event)}
@@ -2194,7 +2007,8 @@ export function TeamDialog({
           type="submit"
           disabled={!name.trim()}
           style={{
-            height: '2.25rem',
+            width: '100%',
+            height: '36px',
             padding: '0 1rem',
             background: name.trim()
               ? 'var(--color-primary)'
@@ -2212,6 +2026,7 @@ export function TeamDialog({
           Add teammate
         </button>
       </form>
+      </div>
     </dialog>
   )
 }

@@ -159,12 +159,11 @@ describe('board', () => {
     const { user } = renderBoard()
     const column = () =>
       document.querySelector('[data-column="Backlog"]') as HTMLElement
-    expect(
-      await screen.findByText(/No stories yet — add one/),
-    ).toBeInTheDocument()
-    const emptyAdd = within(column()).getAllByRole('button', {
+    expect(await screen.findAllByText('No stories yet.')).not.toHaveLength(0)
+    expect(within(column()).getByText('No stories yet.')).toBeInTheDocument()
+    const emptyAdd = within(column()).getByRole('button', {
       name: 'Add story',
-    })[1]!
+    })
     await user.click(emptyAdd)
     const form = () => document.querySelector('.add-story') as HTMLElement
     fireEvent.submit(form())
@@ -273,22 +272,35 @@ describe('board', () => {
       )
     }
     await move()
+    const progress = document.querySelector(
+      '[data-column="In Progress"]',
+    ) as HTMLElement
     expect(
-      await screen.findByText(
+      within(progress).getByRole('heading', { name: 'Publish board' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText(
         'No active sprint — create or activate one before adding stories.',
       ),
-    ).toBeInTheDocument()
+    ).toBeNull()
 
     patch = {
       status: 409,
       json: { detail: 'There is no active sprint right now' },
     }
-    await move()
+    fireEvent.click(within(progress).getByRole('button', { name: 'Move story' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Move to: Backlog' }))
+    const backlogColumn = document.querySelector(
+      '[data-column="Backlog"]',
+    ) as HTMLElement
     expect(
-      await screen.findByText(
+      within(backlogColumn).getByRole('heading', { name: 'Publish board' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText(
         'No active sprint — create or activate one before adding stories.',
       ),
-    ).toBeInTheDocument()
+    ).toBeNull()
 
     patch = { status: 409, json: { detail: 'This story was already moved.' } }
     await move()
@@ -372,9 +384,16 @@ describe('board', () => {
       new PointerEvent('pointermove', { clientX: 40, clientY: 0 }),
     )
     await waitFor(() => expect(card.className).toContain('lifting'))
+    expect(card).toHaveStyle({ userSelect: 'none' })
+    const slot = card.parentElement as HTMLElement
+    const ghost = slot.querySelector('.placeholder') as HTMLElement
+    expect(ghost).toBeTruthy()
+    expect(card.contains(ghost)).toBe(false)
+    expect(slot.contains(ghost)).toBe(true)
+    expect(column.querySelector('.placeholder')).toBeNull()
     fireEvent.pointerMove(column)
-    expect(column.className).toContain('target')
-    expect(document.querySelector('.insert-line')).not.toBeNull()
+    expect(column.querySelector('.placeholder')).toBeNull()
+    expect(document.querySelector('.insert-line')).toBeNull()
     window.dispatchEvent(
       new PointerEvent('pointerup', { clientX: 40, clientY: 0 }),
     )
@@ -498,7 +517,9 @@ describe('board', () => {
 
     const ticket = screen.getByRole('dialog')
     await user.selectOptions(within(ticket).getByLabelText('Your name'), 'ann')
-    const box = within(ticket).getByPlaceholderText('Write a comment')
+    const box = within(ticket).getByPlaceholderText(
+      'Write a comment or tag a teammate',
+    )
     fireEvent.change(box, { target: { value: '@An' } })
     fireEvent.select(box, { target: { selectionStart: 3 } })
     await user.click(within(ticket).getByRole('button', { name: 'Ann' }))
@@ -506,7 +527,7 @@ describe('board', () => {
       expect(
         (
           within(ticket).getByPlaceholderText(
-            'Write a comment',
+            'Write a comment or tag a teammate',
           ) as HTMLTextAreaElement
         ).value,
       ).toContain('@Ann')
@@ -563,6 +584,9 @@ describe('board', () => {
       new PointerEvent('pointerup', { clientX: 0, clientY: 0 }),
     )
     expect(await screen.findByRole('dialog')).toBeInTheDocument()
-    expect(await screen.findByText('No comments yet.')).toBeInTheDocument()
+    expect(screen.queryByText('No comments yet.')).toBeNull()
+    expect(
+      screen.getByPlaceholderText('Write a comment or tag a teammate'),
+    ).toBeInTheDocument()
   })
 })

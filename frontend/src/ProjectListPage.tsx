@@ -110,9 +110,6 @@ export function ProjectListPage() {
   const [busy, setBusy] = useState(false)
   const [creatorOpen, setCreatorOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [filterTab, setFilterTab] = useState<'all' | 'active' | 'archived'>(
-    'all',
-  )
   const [sortMode, setSortMode] = useState<'recent' | 'name'>('recent')
 
   async function load() {
@@ -192,10 +189,6 @@ export function ProjectListPage() {
       : new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
   )
 
-  const projectIndexMap = new Map(
-    projects.filter((p) => !p.pending).map((p, i) => [p.id, i + 1]),
-  )
-
   return (
     <main
       style={{
@@ -236,19 +229,6 @@ export function ProjectListPage() {
             >
               My Workspace
             </h1>
-            <p
-              style={{
-                margin: 0,
-                fontSize: '0.9375rem',
-                lineHeight: '1.5rem',
-                color: 'var(--color-on-surface-variant)',
-                fontStyle: 'italic',
-              }}
-            >
-              &ldquo;Yesterday is history, tomorrow is a mystery, but today is a
-              gift&mdash;that is why it&apos;s called the present.&rdquo;
-              &mdash; Master Oogway
-            </p>
           </div>
 
           <button
@@ -597,52 +577,6 @@ export function ProjectListPage() {
             />
           </div>
 
-          {/* Filter tabs */}
-          <div
-            style={{
-              display: 'flex',
-              background: 'var(--color-surface-container)',
-              borderRadius: '0.75rem',
-              padding: '0.25rem',
-              gap: '0.25rem',
-            }}
-          >
-            {(['all', 'active', 'archived'] as const).map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => setFilterTab(tab)}
-                style={{
-                  padding: '0.25rem 0.75rem',
-                  borderRadius: '0.5rem',
-                  border: 'none',
-                  background:
-                    filterTab === tab
-                      ? 'var(--color-surface-container-lowest)'
-                      : 'transparent',
-                  color:
-                    filterTab === tab
-                      ? 'var(--color-on-surface)'
-                      : 'var(--color-on-surface-variant)',
-                  fontWeight: filterTab === tab ? 500 : 400,
-                  fontSize: '0.8125rem',
-                  cursor: 'pointer',
-                  textTransform: 'capitalize',
-                  boxShadow:
-                    filterTab === tab
-                      ? '0 1px 2px rgba(15,23,42,0.06)'
-                      : 'none',
-                }}
-              >
-                {tab === 'all'
-                  ? `All (${totalProjects})`
-                  : tab === 'active'
-                    ? `Active (${totalProjects})`
-                    : 'Archived (0)'}
-              </button>
-            ))}
-          </div>
-
           {/* Sort */}
           <select
             value={sortMode}
@@ -728,8 +662,7 @@ export function ProjectListPage() {
         {!loading &&
         !failed &&
         sortedProjects.length === 0 &&
-        searchQuery === '' &&
-        filterTab === 'all' ? (
+        searchQuery === '' ? (
           <div
             style={{
               display: 'flex',
@@ -754,7 +687,7 @@ export function ProjectListPage() {
         {!loading &&
         !failed &&
         sortedProjects.length === 0 &&
-        (searchQuery !== '' || filterTab !== 'all') ? (
+        searchQuery !== '' ? (
           <div
             style={{
               display: 'flex',
@@ -772,11 +705,11 @@ export function ProjectListPage() {
             >
               search_off
             </span>
-            <p style={{ margin: 0, fontSize: '0.875rem' }}>
-              No Matching Projects Found
+            <p style={{ margin: 0, fontSize: '13px', color: '#45474c' }}>
+              No matching projects.
             </p>
-            <p style={{ margin: 0, fontSize: '0.75rem' }}>
-              Try adjusting your search query or filter.
+            <p style={{ margin: 0, fontSize: '13px', color: '#45474c' }}>
+              Try a different search.
             </p>
           </div>
         ) : null}
@@ -791,8 +724,6 @@ export function ProjectListPage() {
             }}
           >
             {sortedProjects.map((project) => {
-              const idx = projectIndexMap.get(project.id)
-              const cardId = `CAP-482-${String(idx ?? '??').padStart(2, '0')}`
               return (
                 <div
                   key={project.id}
@@ -807,98 +738,26 @@ export function ProjectListPage() {
                     transition: 'box-shadow 0.15s',
                   }}
                 >
-                  {/* Card header */}
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                    }}
-                  >
-                    <div
+                  {project.pending ? (
+                    <span
                       style={{
-                        display: 'flex',
+                        display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '0.5rem',
+                        gap: '0.25rem',
+                        fontSize: '0.75rem',
+                        color: 'var(--color-on-surface-variant)',
                       }}
                     >
                       <span
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '0.25rem',
-                          padding: '0.125rem 0.5rem',
-                          borderRadius: '9999px',
-                          fontFamily: 'var(--font-family-mono)',
-                          fontSize: '0.6875rem',
-                          fontWeight: 500,
-                          background: project.pending
-                            ? 'var(--color-surface-container-high)'
-                            : 'var(--color-secondary-fixed)',
-                          color: project.pending
-                            ? 'var(--color-on-surface-variant)'
-                            : 'var(--color-on-secondary-fixed)',
-                        }}
+                        className="material-symbols-outlined"
+                        aria-hidden="true"
+                        style={{ fontSize: '12px' }}
                       >
-                        {project.pending ? (
-                          <>
-                            <span
-                              className="material-symbols-outlined"
-                              aria-hidden="true"
-                              style={{ fontSize: '12px' }}
-                            >
-                              sync
-                            </span>
-                            Saving…
-                          </>
-                        ) : (
-                          <>
-                            <span
-                              style={{
-                                width: '0.375rem',
-                                height: '0.375rem',
-                                borderRadius: '9999px',
-                                background: 'var(--color-secondary)',
-                                display: 'inline-block',
-                              }}
-                            />
-                            Sprint 1 Active
-                          </>
-                        )}
+                        sync
                       </span>
-                      <span
-                        style={{
-                          fontFamily: 'var(--font-family-mono)',
-                          fontSize: '0.6875rem',
-                          color: 'var(--color-outline)',
-                        }}
-                      >
-                        {cardId}
-                      </span>
-                    </div>
-                    {!project.pending && (
-                      <button
-                        type="button"
-                        aria-label="Project settings"
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          padding: '0.25rem',
-                          borderRadius: '0.25rem',
-                          color: 'var(--color-on-surface-variant)',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <span
-                          className="material-symbols-outlined"
-                          aria-hidden="true"
-                          style={{ fontSize: '16px' }}
-                        >
-                          more_horiz
-                        </span>
-                      </button>
-                    )}
-                  </div>
+                      Saving…
+                    </span>
+                  ) : null}
 
                   {/* Title */}
                   <h3
@@ -941,129 +800,23 @@ export function ProjectListPage() {
                     </small>
                   ) : null}
 
-                  {/* Progress bar */}
-                  <div>
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        marginBottom: '0.375rem',
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: '0.75rem',
-                          color: 'var(--color-on-surface-variant)',
-                        }}
-                      >
-                        Progress
-                      </span>
-                      <span
-                        style={{
-                          fontSize: '0.75rem',
-                          fontFamily: 'var(--font-family-mono)',
-                          color: 'var(--color-on-surface-variant)',
-                        }}
-                      >
-                        0%
-                      </span>
-                    </div>
-                    <div
-                      style={{
-                        height: '4px',
-                        borderRadius: '9999px',
-                        background: 'var(--color-surface-container)',
-                        overflow: 'hidden',
-                      }}
-                    >
-                      <div
-                        style={{
-                          height: '100%',
-                          width: '0%',
-                          background: 'var(--color-secondary)',
-                          borderRadius: '9999px',
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Meta chips */}
-                  <div
-                    style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}
-                  >
-                    {[
-                      { icon: 'flag', label: '0 Milestones' },
-                      { icon: 'article', label: '0 Stories' },
-                    ].map(({ icon, label }) => (
-                      <span
-                        key={label}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '0.25rem',
-                          padding: '0.125rem 0.5rem',
-                          background: 'var(--color-surface-container-low)',
-                          borderRadius: '0.25rem',
-                          fontSize: '0.75rem',
-                          color: 'var(--color-on-surface-variant)',
-                        }}
-                      >
-                        <span
-                          className="material-symbols-outlined"
-                          aria-hidden="true"
-                          style={{ fontSize: '12px' }}
-                        >
-                          {icon}
-                        </span>
-                        {label}
-                      </span>
-                    ))}
-                  </div>
-
-                  {/* Footer */}
                   <div
                     style={{
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
                       paddingTop: '0.5rem',
-                      borderTop: '1px solid var(--color-outline-variant)',
                       marginTop: 'auto',
                     }}
                   >
-                    <div
+                    <span
                       style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
+                        fontSize: '0.75rem',
+                        color: 'var(--color-on-surface-variant)',
                       }}
                     >
-                      <div
-                        style={{
-                          width: '1.25rem',
-                          height: '1.25rem',
-                          borderRadius: '9999px',
-                          background: 'var(--color-primary)',
-                          color: 'var(--color-on-primary)',
-                          fontSize: '0.6875rem',
-                          fontWeight: 600,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          flexShrink: 0,
-                        }}
-                      >
-                        CL
-                      </div>
-                      <span
-                        style={{
-                          fontSize: '0.75rem',
-                          color: 'var(--color-on-surface-variant)',
-                        }}
-                      >
-                        Updated {formatDate(project.created_at)}
-                      </span>
-                    </div>
+                      Created {formatDate(project.created_at)}
+                    </span>
 
                     {!project.pending ? (
                       <Link
