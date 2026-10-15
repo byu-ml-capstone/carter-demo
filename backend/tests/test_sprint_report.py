@@ -254,15 +254,12 @@ def test_all_done_has_no_invented_next_goals():
     assert report["next_sprint_goals"] == NO_UNFINISHED
 
 
-def test_model_failure_does_not_return_a_draft():
+def test_model_failure_still_returns_the_snapshot_report():
     model = FakeModel(RuntimeError("timeout"))
-    try:
-        draft_report(snapshot(), model=model)
-    except SprintReportError as exc:
-        assert exc.status_code == 503
-        assert exc.detail == "Sprint report draft failed; try again."
-    else:
-        raise AssertionError("expected 503")
+    report = draft_report(snapshot(), model=model)
+    assert report["sprint_goal"] == "Ship the board"
+    assert "Publish board" in report["completed_work"]
+    assert report["faculty_notes"] == NO_FACULTY_NOTES
 
 
 def test_unconfigured_course_client_does_not_use_the_network(monkeypatch):
@@ -273,13 +270,10 @@ def test_unconfigured_course_client_does_not_use_the_network(monkeypatch):
         raise AssertionError("network call")
 
     monkeypatch.setattr("urllib.request.urlopen", fail_if_called)
-    try:
-        draft_report(snapshot())
-    except SprintReportError as exc:
-        assert exc.status_code == 503
-        assert exc.detail == "Course AI client is not configured"
-    else:
-        raise AssertionError("expected unconfigured client")
+    report = draft_report(snapshot())
+    assert report["sprint_goal"] == "Ship the board"
+    assert "Publish board" in report["completed_work"]
+    assert report["faculty_notes"] == NO_FACULTY_NOTES
 
 
 def test_sprint_report_error_from_the_model_is_not_wrapped():

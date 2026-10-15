@@ -44,7 +44,7 @@ export const routes = [
         children: [
           { path: '/', element: <ProjectListPage /> },
           { path: '/projects/:projectId', element: <WorkspacePage /> },
-          { path: '/sprints/:sprintId/report', element: <ReportPage /> },
+          { path: '/projects/:projectId/report', element: <ReportPage /> },
         ],
       },
     ],

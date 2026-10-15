@@ -409,9 +409,10 @@ def test_report_draft_uses_sprint_faculty_notes_and_keeps_final(client):
         headers=headers,
     )
     main.report_drafter = None
-    unconfigured = client.post(f"/sprints/{sprint['id']}/report/draft", headers=headers)
-    assert unconfigured.status_code == 503
-    assert client.get(f"/sprints/{sprint['id']}/report", headers=headers).status_code == 404
+    fallback = client.post(f"/sprints/{sprint['id']}/report/draft", headers=headers)
+    assert fallback.status_code == 200
+    assert fallback.json()["draft_content"]["faculty_notes"] == "Ship the demo"
+    assert fallback.json()["draft_content"]["completed_work"] == NOTHING_COMPLETED
 
     main.report_drafter = drafter
     drafted = client.post(f"/sprints/{sprint['id']}/report/draft", headers=headers)
@@ -803,6 +804,77 @@ def test_draft_failures_do_not_replace_a_saved_report(client):
         main._final_content(["nope"])
 
 
+def test_project_report_drafts_from_the_board_without_closing_a_sprint(client):
+    headers = auth(client)
+    project = _project(client, headers)
+    pid = project["id"]
+    story = _story(client, headers, pid, title="Publish board")
+    client.patch(f"/stories/{story['id']}", json={"status": "Done"}, headers=headers)
+    missing = client.get(f"/projects/{pid}/reports", headers=headers)
+    assert missing.status_code == 200
+    assert missing.json() == []
+
+    calls = []
+
+    def drafter(snapshot):
+        calls.append(snapshot)
+        return _five(completed_work="Publish board")
+
+    main.report_drafter = drafter
+    empty = client.post("/projects/missing/report/draft", headers=headers)
+    assert empty.status_code == 404
+
+    drafted = client.post(
+        f"/projects/{pid}/report/draft",
+        json={"faculty_notes": "Watch the demo"},
+        headers=headers,
+    )
+    assert drafted.status_code == 200
+    body = drafted.json()["draft_content"]
+    report_id = drafted.json()["id"]
+    assert body["completed_work"] == "Publish board"
+    assert body["faculty_notes"] == "Watch the demo"
+    assert calls[0]["status"] == "Closed"
+    assert calls[0]["any_completed"] is True
+    assert calls[0]["stories"][0]["status_at_close"] == "Done"
+    assert calls[0]["sprint_goal"] is None
+    assert drafted.json()["stories_snapshot"][0]["title"] == "Publish board"
+    assert drafted.json()["stories_snapshot"][0]["status_at_close"] == "Done"
+
+    client.patch(
+        f"/stories/{story['id']}",
+        json={"title": "Publish board later", "status": "In Progress"},
+        headers=headers,
+    )
+    second = client.post(f"/projects/{pid}/report/draft", json={}, headers=headers)
+    assert second.status_code == 200
+    assert second.json()["id"] != report_id
+    listed = client.get(f"/projects/{pid}/reports", headers=headers).json()
+    assert [row["id"] for row in listed] == [second.json()["id"], report_id]
+
+    saved = client.put(
+        f"/projects/{pid}/reports/{report_id}",
+        json={"final_content": REPORT, "reviewed_by": "Ada"},
+        headers=headers,
+    )
+    assert saved.status_code == 200
+    again = client.get(f"/projects/{pid}/reports/{report_id}", headers=headers).json()
+    assert again["final_content"]["completed_work"] == "Done the board"
+    assert again["project_id"] == pid
+    kept = client.get(f"/projects/{pid}/reports/{second.json()['id']}", headers=headers).json()
+    assert kept["final_content"] is None
+    assert kept["stories_snapshot"][0]["title"] == "Publish board later"
+    assert kept["stories_snapshot"][0]["status_at_close"] == "In Progress"
+    frozen = client.get(f"/projects/{pid}/reports/{report_id}", headers=headers).json()
+    assert frozen["stories_snapshot"][0]["title"] == "Publish board"
+    assert frozen["stories_snapshot"][0]["status_at_close"] == "Done"
+
+    bare = _project(client, headers, name="Empty board")
+    nothing = client.post(f"/projects/{bare['id']}/report/draft", json={}, headers=headers)
+    assert nothing.status_code == 422
+    assert nothing.json()["detail"].startswith("This project has no stories")
+
+
 def test_missing_drafter_package_is_503(client, monkeypatch):
     headers = auth(client)
     _project_body, _story_body, sprint = _closed_sprint(client, headers)
@@ -851,3 +923,64 @@ def test_database_url_and_migration_rollback(tmp_path, monkeypatch):
     database = Database(f"sqlite:///{tmp_path / 'broken.db'}")
     with pytest.raises(sqlite3.Error):
         database.apply_migrations()
+
+
+def test_missing_project_report_and_draft_failures(client, monkeypatch):
+    headers = auth(client)
+    project = _project(client, headers)
+    pid = project["id"]
+    _story(client, headers, pid)
+    missing = client.get(f"/projects/{pid}/reports/missing", headers=headers)
+    assert missing.status_code == 404
+    assert missing.json()["detail"] == "Report not found"
+
+    def raise_app(_snapshot):
+        raise AppError(409, "Sprint is not closed.")
+
+    main.report_drafter = raise_app
+    refused = client.post(f"/projects/{pid}/report/draft", json={}, headers=headers)
+    assert refused.status_code == 409
+
+    class Upstream(Exception):
+        status_code = 429
+        detail = "slow down"
+
+    def raise_upstream(_snapshot):
+        raise Upstream()
+
+    main.report_drafter = raise_upstream
+    limited = client.post(f"/projects/{pid}/report/draft", json={}, headers=headers)
+    assert limited.status_code == 429
+    assert limited.json()["detail"] == "slow down"
+
+    def boom(_snapshot):
+        raise RuntimeError("model down")
+
+    main.report_drafter = boom
+    failed = client.post(f"/projects/{pid}/report/draft", json={}, headers=headers)
+    assert failed.status_code == 502
+    assert client.get(f"/projects/{pid}/reports", headers=headers).json() == []
+
+    sprint_project = _project(client, headers, name="Report sprint")
+    story = _story(client, headers, sprint_project["id"])
+    sprint = _active_sprint(client, headers, sprint_project["id"])
+    client.patch(f"/stories/{story['id']}", json={"status": "Done"}, headers=headers)
+    closed = client.post(f"/sprints/{sprint['id']}/close", headers=headers)
+    assert closed.status_code == 200
+    main.report_drafter = raise_upstream
+    sprint_limited = client.post(f"/sprints/{sprint['id']}/report/draft", headers=headers)
+    assert sprint_limited.status_code == 429
+    assert client.get(f"/sprints/{sprint['id']}/report", headers=headers).status_code == 404
+
+    main.report_drafter = None
+    real_import = builtins.__import__
+
+    def blocked(name, globals=None, locals=None, fromlist=(), level=0):
+        if name == "sprint_report":
+            raise ImportError("sprint_report is not installed")
+        return real_import(name, globals, locals, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", blocked)
+    unconfigured = client.post(f"/projects/{pid}/report/draft", json={}, headers=headers)
+    assert unconfigured.status_code == 503
+    assert unconfigured.json()["detail"] == "Sprint report drafter is not configured."

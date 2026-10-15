@@ -1,23 +1,22 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useBlocker, useParams } from 'react-router-dom'
 import { api, ApiError, normalizeReport } from './api'
-import { CommentThread } from './comments'
 import {
-  consumeSuppressLeave,
   authorKey,
+  consumeSuppressLeave,
   setReportDirty,
   suppressLeaveGuard,
 } from './reportGuard'
-import { AccountBar, useSession } from './session'
-import { TeamDialog } from './WorkspacePage'
+import { AccountBar } from './session'
 import { toast } from './toast'
 import type {
-  Comment,
   Member,
+  Project,
   ReportFields,
   ReportKey,
-  Sprint,
-  SprintReport,
+  ReportSnapshotStory,
+  SavedReport,
+  Story,
 } from './types'
 import {
   EMPTY_REPORT,
@@ -28,7 +27,7 @@ import {
   REPORT_KEYS,
   REPORT_LABELS,
 } from './types'
-import { PriorityBadge, TypeIcon } from './ui'
+import { formatWhen, PriorityBadge, TypeIcon } from './ui'
 
 function sameFields(a: ReportFields, b: ReportFields) {
   return REPORT_KEYS.every((key) => a[key] === b[key])
@@ -49,28 +48,24 @@ function prepareFields(fields: ReportFields, doneCount: number): ReportFields {
 }
 
 export function ReportPage() {
-  const { sprintId = '' } = useParams()
-  const { session } = useSession()
-  const [sprint, setSprint] = useState<Sprint | null>(null)
+  const { projectId = '' } = useParams()
+  const [project, setProject] = useState<Project | null>(null)
+  const [stories, setStories] = useState<Story[]>([])
   const [members, setMembers] = useState<Member[]>([])
-  const [comments, setComments] = useState<Comment[]>([])
-  const [draftText, setDraftText] = useState('')
+  const [notes, setNotes] = useState('')
+  const [reports, setReports] = useState<SavedReport[]>([])
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [snapshot, setSnapshot] = useState<ReportSnapshotStory[]>([])
   const [fields, setFields] = useState<ReportFields>(EMPTY_REPORT())
   const [baseline, setBaseline] = useState<ReportFields>(EMPTY_REPORT())
   const [savedFinal, setSavedFinal] = useState<ReportFields | null>(null)
   const [mode, setMode] = useState<
-    | 'loading'
-    | 'not-closed'
-    | 'empty'
-    | 'drafting'
-    | 'error'
-    | 'editing'
-    | 'readonly'
+    'loading' | 'idle' | 'empty' | 'drafting' | 'error' | 'editing' | 'readonly'
   >('loading')
   const [saving, setSaving] = useState(false)
-  const [teamOpen, setTeamOpen] = useState(false)
 
   const dirty = mode === 'editing' && !sameFields(fields, baseline)
+  const doneCount = stories.filter((story) => story.status === 'Done').length
 
   useEffect(() => {
     setReportDirty(dirty)
@@ -106,89 +101,84 @@ export function ReportPage() {
     return () => window.removeEventListener('beforeunload', onLeave)
   }, [dirty])
 
-  async function loadComments(id: string) {
-    const rows = await api<Comment[]>(`/sprints/${id}/comments`)
-    setComments(rows)
+  function showSaved(report: SavedReport, finished: number) {
+    const frozen = report.stories_snapshot ?? []
+    const content =
+      report.final_content ?? report.draft_content ?? EMPTY_REPORT()
+    const finishedThen = frozen.length
+      ? frozen.filter((story) => story.status_at_close === 'Done').length
+      : finished
+    const next = prepareFields(content, finishedThen)
+    setSnapshot(frozen)
+    setSelectedId(report.id)
+    setFields(next)
+    setBaseline(next)
+    setSavedFinal(report.final_content ? next : null)
+    setMode(report.final_content ? 'readonly' : 'editing')
+  }
+
+  function openReport(report: SavedReport) {
+    if (report.id === selectedId && mode !== 'idle') return
+    if (
+      dirty &&
+      !window.confirm('You have unsaved changes to this report — leave anyway?')
+    ) {
+      return
+    }
+    setReportDirty(false)
+    showSaved(report, doneCount)
   }
 
   async function load() {
     setMode('loading')
     try {
-      const next = await api<Sprint>(`/sprints/${sprintId}`)
-      setSprint(next)
-      if (next.project_id) {
-        const people = await api<Member[]>(
-          `/projects/${next.project_id}/members`,
-        )
-        setMembers(people)
-        void loadComments(next.id).catch(() => undefined)
+      const [nextProject, nextStories, nextMembers] = await Promise.all([
+        api<Project>(`/projects/${projectId}`),
+        api<Story[]>(`/projects/${projectId}/stories`),
+        api<Member[]>(`/projects/${projectId}/members`),
+      ])
+      setProject(nextProject)
+      setStories(nextStories)
+      setMembers(nextMembers)
+      const rows = (await api<SavedReport[]>(`/projects/${projectId}/reports`))
+        .map((row) => normalizeReport(row))
+        .filter((row): row is SavedReport => row !== null && Boolean(row.id))
+      setReports(rows)
+      const finished = nextStories.filter(
+        (story) => story.status === 'Done',
+      ).length
+      if (rows[0]) showSaved(rows[0], finished)
+      else {
+        setSelectedId(null)
+        setMode('idle')
       }
-      if (next.status !== 'Closed') {
-        setMode('not-closed')
-        return
-      }
-      let report: SprintReport | null = null
-      try {
-        report = normalizeReport(
-          await api<SprintReport>(`/sprints/${sprintId}/report`),
-        )
-      } catch (error) {
-        if (error instanceof ApiError && error.status === 404) report = null
-        else throw error
-      }
-      if (report?.final_content) {
-        const finalFields = prepareFields(
-          report.final_content,
-          (next.stories_snapshot ?? []).filter(
-            (story) => story.status_at_close === 'Done',
-          ).length,
-        )
-        setSavedFinal(finalFields)
-        setFields(finalFields)
-        setBaseline(finalFields)
-        setMode('readonly')
-        return
-      }
-      if (report?.draft_content) {
-        showDraft(report.draft_content, next)
-        return
-      }
-      await generate(next)
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) return
-      if (error instanceof ApiError && error.status === 422) {
-        setMode('empty')
-        return
-      }
       setMode('error')
     }
   }
 
-  function showDraft(content: ReportFields, source: Sprint) {
-    const doneCount = (source.stories_snapshot ?? []).filter(
-      (story) => story.status_at_close === 'Done',
-    ).length
-    const next = prepareFields(content, doneCount)
-    setFields(next)
-    setBaseline(next)
-    setMode('editing')
-  }
-
-  async function generate(source?: Sprint) {
-    const current = source ?? sprint
-    if (!current) return
+  async function generate() {
     if (dirty && !window.confirm('Regenerate and replace these edits?')) return
     setMode('drafting')
     try {
-      const response = await api<{ draft_content: ReportFields }>(
-        `/sprints/${current.id}/report/draft`,
-        { method: 'POST', body: {} },
+      const response = normalizeReport(
+        await api<SavedReport>(`/projects/${projectId}/report/draft`, {
+          method: 'POST',
+          body: { faculty_notes: notes.trim() || fields.faculty_notes },
+        }),
       )
-      const normalized = normalizeReport({
-        draft_content: response.draft_content,
-        final_content: savedFinal,
-      })
-      showDraft(normalized?.draft_content ?? EMPTY_REPORT(), current)
+      if (!response?.id || !response.generated_at) {
+        setMode('error')
+        return
+      }
+      const saved: SavedReport = {
+        ...response,
+        id: response.id,
+        generated_at: response.generated_at,
+      }
+      setReports((current) => [saved, ...current])
+      showSaved(saved, doneCount)
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) return
       if (error instanceof ApiError && error.status === 422) {
@@ -201,35 +191,40 @@ export function ReportPage() {
 
   useEffect(() => {
     void load()
-    // Reload when the route id changes. load closes over savedFinal only after generate.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sprintId])
-
-  useEffect(() => {
-    if (!sprint || sprint.status !== 'Closed') return
-    const timer = window.setInterval(() => {
-      if (!document.hidden) void loadComments(sprint.id).catch(() => undefined)
-    }, 10000)
-    return () => window.clearInterval(timer)
-  }, [sprint])
+  }, [projectId])
 
   const reviewedBy = useMemo(() => {
-    if (!sprint) return undefined
-    const id = localStorage.getItem(authorKey(sprint.project_id))
+    const id = localStorage.getItem(authorKey(projectId))
     return members.find((member) => member.id === id)?.name
-  }, [members, sprint])
+  }, [members, projectId])
 
   async function save() {
-    if (!sprint) return
+    if (!selectedId) return
     setSaving(true)
     try {
-      await api(`/sprints/${sprint.id}/report`, {
-        method: 'PUT',
-        body: {
-          final_content: fields,
-          reviewed_by: reviewedBy,
-        },
-      })
+      const updated = normalizeReport(
+        await api<SavedReport>(`/projects/${projectId}/reports/${selectedId}`, {
+          method: 'PUT',
+          body: {
+            final_content: fields,
+            reviewed_by: reviewedBy,
+          },
+        }),
+      )
+      setReports((current) =>
+        current.map((report) =>
+          report.id === selectedId
+            ? {
+                ...report,
+                ...(updated ?? {}),
+                id: report.id,
+                generated_at: report.generated_at,
+                final_content: fields,
+              }
+            : report,
+        ),
+      )
       setSavedFinal(fields)
       setBaseline(fields)
       setReportDirty(false)
@@ -250,21 +245,58 @@ export function ReportPage() {
   }
 
   const blank = REPORT_KEYS.every((key) => !fields[key].trim())
-  const projectHref = sprint ? `/projects/${sprint.project_id}` : '/'
+  const projectHref = `/projects/${projectId}`
 
   return (
     <main className="page report">
       <header className="page-header">
         <div>
           <Link to={projectHref}>Back to board</Link>
-          <h1>{sprint?.goal?.trim() || 'Sprint report'}</h1>
+          <h1>{project?.name?.trim() || 'Report'}</h1>
         </div>
         <AccountBar />
       </header>
-      {mode === 'drafting' ? <p>Drafting your sprint report…</p> : null}
-      {mode === 'loading' ? <p>Loading the sprint…</p> : null}
-      {mode === 'not-closed' ? (
-        <p>Close the sprint before generating a report.</p>
+      <section className="snapshot" aria-label="Saved reports">
+        <h2>Saved reports</h2>
+        {reports.length === 0 ? <p>No reports yet.</p> : null}
+        <ul>
+          {reports.map((report) => {
+            const title =
+              (
+                report.final_content ?? report.draft_content
+              )?.sprint_goal?.trim() || 'Report'
+            return (
+              <li key={report.id}>
+                <button
+                  type="button"
+                  aria-current={report.id === selectedId ? 'true' : undefined}
+                  onClick={() => openReport(report)}
+                >
+                  {title} {formatWhen(report.generated_at)}
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      </section>
+      {mode === 'drafting' ? <p>Drafting your report…</p> : null}
+      {mode === 'loading' ? <p>Loading the board…</p> : null}
+      {mode === 'idle' ? (
+        <section className="report-fields">
+          <p>Generate a report from the stories on this board.</p>
+          <label className="report-field">
+            Faculty notes
+            <textarea
+              aria-label="Faculty notes"
+              value={notes}
+              placeholder="Optional"
+              onChange={(event) => setNotes(event.target.value)}
+            />
+          </label>
+          <button type="button" onClick={() => void generate()}>
+            Generate report
+          </button>
+        </section>
       ) : null}
       {mode === 'empty' ? (
         <p>
@@ -298,10 +330,10 @@ export function ReportPage() {
             ))}
           </div>
           <section className="snapshot">
-            <h2>Sprint snapshot</h2>
+            <h2>Board snapshot</h2>
             <ul>
-              {(sprint?.stories_snapshot ?? []).map((story) => (
-                <li key={story.story_id}>
+              {snapshot.map((story) => (
+                <li key={story.id}>
                   <TypeIcon type={story.type} />
                   <span>{story.title}</span>
                   <PriorityBadge priority={story.priority} />
@@ -310,21 +342,6 @@ export function ReportPage() {
               ))}
             </ul>
           </section>
-          {sprint ? (
-            <CommentThread
-              projectId={sprint.project_id}
-              parent={{ kind: 'sprint', id: sprint.id }}
-              members={members}
-              comments={comments}
-              email={session?.user.email ?? ''}
-              draft={draftText}
-              onDraft={setDraftText}
-              onPosted={(comment) =>
-                setComments((current) => [...current, comment])
-              }
-              onOpenTeam={() => setTeamOpen(true)}
-            />
-          ) : null}
           <div className="row">
             {mode === 'readonly' ? (
               <button type="button" onClick={() => setMode('editing')}>
@@ -349,14 +366,6 @@ export function ReportPage() {
             </button>
           </div>
         </>
-      ) : null}
-      {teamOpen && sprint ? (
-        <TeamDialog
-          projectId={sprint.project_id}
-          members={members}
-          onClose={() => setTeamOpen(false)}
-          onCreated={(member) => setMembers((current) => [...current, member])}
-        />
       ) : null}
     </main>
   )

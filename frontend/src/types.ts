@@ -89,10 +89,27 @@ export type ReportFields = {
 }
 
 export type SprintReport = {
+  id?: string
+  project_id?: string
   draft_content: ReportFields | null
   final_content: ReportFields | null
   generated_at?: string | null
   reviewed_by?: string | null
+}
+
+export type ReportSnapshotStory = {
+  id: string
+  title: string
+  description: string | null
+  priority: Priority
+  type: StoryType
+  status_at_close: Status
+}
+
+export type SavedReport = SprintReport & {
+  id: string
+  generated_at: string
+  stories_snapshot?: ReportSnapshotStory[]
 }
 
 export const REPORT_KEYS = [
@@ -117,7 +134,7 @@ export const NO_BLOCKERS = 'No blockers were recorded for this sprint'
 export const NONE_COMPLETED = 'No stories were completed this sprint'
 export const NO_FACULTY_NOTES = 'No faculty notes recorded'
 export const EMPTY_SPRINT_DETAIL =
-  "This sprint had no stories, so there's nothing to report"
+  "This project has no stories, so there's nothing to report"
 
 export const EMPTY_REPORT = (): ReportFields => ({
   sprint_goal: '',

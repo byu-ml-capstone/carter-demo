@@ -7,7 +7,7 @@ import {
   type FormEvent,
   type PointerEvent as ReactPointerEvent,
 } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { api, ApiError } from './api'
 import { useSession } from './session'
 import { TicketModal } from './TicketModal'
@@ -39,7 +39,6 @@ const ALREADY = 'This story was already moved.'
 
 export function WorkspacePage() {
   const { projectId = '' } = useParams()
-  const navigate = useNavigate()
   const { session } = useSession()
   const [project, setProject] = useState<Project | null>(null)
   const [stories, setStories] = useState<Story[]>([])
@@ -300,7 +299,10 @@ export function WorkspacePage() {
         method: 'POST',
         body: { faculty_notes: facultyNotes.trim() },
       })
-      navigate(`/sprints/${active.id}/report`)
+      setConfirmClose(false)
+      setFacultyNotes('')
+      await load()
+      setClosing(false)
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) return
       if (error instanceof ApiError && error.status === 409)
@@ -645,6 +647,32 @@ export function WorkspacePage() {
 
           <div style={{ flex: 1 }} />
 
+          <Link
+            to={`/projects/${projectId}/report`}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.375rem',
+              height: '2.25rem',
+              padding: '0 0.875rem',
+              background: 'var(--color-surface-container-lowest)',
+              border: '1px solid var(--color-outline-variant)',
+              borderRadius: '0.5rem',
+              fontSize: '0.8125rem',
+              color: 'var(--color-on-surface)',
+              textDecoration: 'none',
+            }}
+          >
+            <span
+              className="material-symbols-outlined"
+              aria-hidden="true"
+              style={{ fontSize: '16px' }}
+            >
+              summarize
+            </span>
+            Generate report
+          </Link>
+
           {/* History */}
           <button
             type="button"
@@ -984,15 +1012,14 @@ export function WorkspacePage() {
             <ul>
               {closed.map((sprint) => (
                 <li key={sprint.id}>
-                  <Link
-                    to={`/sprints/${sprint.id}/report`}
+                  <span
                     style={{
                       fontSize: '0.875rem',
-                      color: 'var(--color-secondary)',
+                      color: 'var(--color-on-surface)',
                     }}
                   >
                     {sprintLabel('Closed', sprint.goal)}
-                  </Link>
+                  </span>
                 </li>
               ))}
             </ul>

@@ -85,7 +85,7 @@ function renderBoard() {
         ),
         children: [
           { path: '/projects/:projectId', element: <WorkspacePage /> },
-          { path: '/sprints/:sprintId/report', element: <p>Report page</p> },
+          { path: '/projects/:projectId/report', element: <p>Report page</p> },
           { path: '/sign-in', element: <p>Sign in page</p> },
           { path: '/', element: <p>Projects home</p> },
         ],
@@ -257,10 +257,10 @@ describe('board', () => {
       await screen.findByText(/Resolved stories are hidden/),
     ).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'History' }))
-    expect(screen.getByRole('link', { name: 'First slice' })).toHaveAttribute(
-      'href',
-      '/sprints/sp3/report',
-    )
+    expect(screen.getByText('First slice')).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: 'Generate report' }),
+    ).toHaveAttribute('href', '/projects/p1/report')
 
     const move = async () => {
       const card = screen
