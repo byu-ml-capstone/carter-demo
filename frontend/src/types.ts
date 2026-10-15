@@ -89,10 +89,27 @@ export type ReportFields = {
 }
 
 export type SprintReport = {
+  id?: string
+  project_id?: string
   draft_content: ReportFields | null
   final_content: ReportFields | null
   generated_at?: string | null
   reviewed_by?: string | null
+}
+
+export type ReportSnapshotStory = {
+  id: string
+  title: string
+  description: string | null
+  priority: Priority
+  type: StoryType
+  status_at_close: Status
+}
+
+export type SavedReport = SprintReport & {
+  id: string
+  generated_at: string
+  stories_snapshot?: ReportSnapshotStory[]
 }
 
 export const REPORT_KEYS = [

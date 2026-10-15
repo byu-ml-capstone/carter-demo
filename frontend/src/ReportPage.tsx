@@ -4,7 +4,15 @@ import { api, ApiError, normalizeReport } from './api'
 import { authorKey, consumeSuppressLeave, setReportDirty, suppressLeaveGuard } from './reportGuard'
 import { AccountBar } from './session'
 import { toast } from './toast'
-import type { Member, Project, ReportFields, ReportKey, Story, SprintReport } from './types'
+import type {
+  Member,
+  Project,
+  ReportFields,
+  ReportKey,
+  ReportSnapshotStory,
+  SavedReport,
+  Story,
+} from './types'
 import {
   EMPTY_REPORT,
   EMPTY_SPRINT_DETAIL,
@@ -14,7 +22,7 @@ import {
   REPORT_KEYS,
   REPORT_LABELS,
 } from './types'
-import { PriorityBadge, TypeIcon } from './ui'
+import { formatWhen, PriorityBadge, TypeIcon } from './ui'
 
 function sameFields(a: ReportFields, b: ReportFields) {
   return REPORT_KEYS.every((key) => a[key] === b[key])
@@ -40,6 +48,9 @@ export function ReportPage() {
   const [stories, setStories] = useState<Story[]>([])
   const [members, setMembers] = useState<Member[]>([])
   const [notes, setNotes] = useState('')
+  const [reports, setReports] = useState<SavedReport[]>([])
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [snapshot, setSnapshot] = useState<ReportSnapshotStory[]>([])
   const [fields, setFields] = useState<ReportFields>(EMPTY_REPORT())
   const [baseline, setBaseline] = useState<ReportFields>(EMPTY_REPORT())
   const [savedFinal, setSavedFinal] = useState<ReportFields | null>(null)
@@ -85,11 +96,28 @@ export function ReportPage() {
     return () => window.removeEventListener('beforeunload', onLeave)
   }, [dirty])
 
-  function showDraft(content: ReportFields) {
-    const next = prepareFields(content, doneCount)
+  function showSaved(report: SavedReport, finished: number) {
+    const frozen = report.stories_snapshot ?? []
+    const content = report.final_content ?? report.draft_content ?? EMPTY_REPORT()
+    const finishedThen = frozen.length
+      ? frozen.filter((story) => story.status_at_close === 'Done').length
+      : finished
+    const next = prepareFields(content, finishedThen)
+    setSnapshot(frozen)
+    setSelectedId(report.id)
     setFields(next)
     setBaseline(next)
-    setMode('editing')
+    setSavedFinal(report.final_content ? next : null)
+    setMode(report.final_content ? 'readonly' : 'editing')
+  }
+
+  function openReport(report: SavedReport) {
+    if (report.id === selectedId && mode !== 'idle') return
+    if (dirty && !window.confirm('You have unsaved changes to this report — leave anyway?')) {
+      return
+    }
+    setReportDirty(false)
+    showSaved(report, doneCount)
   }
 
   async function load() {
@@ -103,33 +131,18 @@ export function ReportPage() {
       setProject(nextProject)
       setStories(nextStories)
       setMembers(nextMembers)
-      let report: SprintReport | null = null
-      try {
-        report = normalizeReport(
-          await api<SprintReport>(`/projects/${projectId}/report`),
-        )
-      } catch (error) {
-        if (error instanceof ApiError && error.status === 404) report = null
-        else throw error
+      const rows = (
+        await api<SavedReport[]>(`/projects/${projectId}/reports`)
+      )
+        .map((row) => normalizeReport(row))
+        .filter((row): row is SavedReport => row !== null && Boolean(row.id))
+      setReports(rows)
+      const finished = nextStories.filter((story) => story.status === 'Done').length
+      if (rows[0]) showSaved(rows[0], finished)
+      else {
+        setSelectedId(null)
+        setMode('idle')
       }
-      if (report?.final_content) {
-        const finished = nextStories.filter((story) => story.status === 'Done').length
-        const finalFields = prepareFields(report.final_content, finished)
-        setSavedFinal(finalFields)
-        setFields(finalFields)
-        setBaseline(finalFields)
-        setMode('readonly')
-        return
-      }
-      if (report?.draft_content) {
-        const finished = nextStories.filter((story) => story.status === 'Done').length
-        const next = prepareFields(report.draft_content, finished)
-        setFields(next)
-        setBaseline(next)
-        setMode('editing')
-        return
-      }
-      setMode('idle')
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) return
       setMode('error')
@@ -140,24 +153,23 @@ export function ReportPage() {
     if (dirty && !window.confirm('Regenerate and replace these edits?')) return
     setMode('drafting')
     try {
-      const response = await api<{ draft_content: ReportFields }>(
-        `/projects/${projectId}/report/draft`,
-        {
+      const response = normalizeReport(
+        await api<SavedReport>(`/projects/${projectId}/report/draft`, {
           method: 'POST',
           body: { faculty_notes: notes.trim() || fields.faculty_notes },
-        },
+        }),
       )
-      const normalized = normalizeReport({
-        draft_content: response.draft_content,
-        final_content: savedFinal,
-      })
-      const next = prepareFields(
-        normalized?.draft_content ?? EMPTY_REPORT(),
-        doneCount,
-      )
-      setFields(next)
-      setBaseline(next)
-      setMode('editing')
+      if (!response?.id || !response.generated_at) {
+        setMode('error')
+        return
+      }
+      const saved: SavedReport = {
+        ...response,
+        id: response.id,
+        generated_at: response.generated_at,
+      }
+      setReports((current) => [saved, ...current])
+      showSaved(saved, doneCount)
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) return
       if (error instanceof ApiError && error.status === 422) {
@@ -179,15 +191,31 @@ export function ReportPage() {
   }, [members, projectId])
 
   async function save() {
+    if (!selectedId) return
     setSaving(true)
     try {
-      await api(`/projects/${projectId}/report`, {
+      const updated = normalizeReport(
+        await api<SavedReport>(`/projects/${projectId}/reports/${selectedId}`, {
         method: 'PUT',
         body: {
           final_content: fields,
           reviewed_by: reviewedBy,
         },
-      })
+      }),
+      )
+      setReports((current) =>
+        current.map((report) =>
+          report.id === selectedId
+            ? {
+                ...report,
+                ...(updated ?? {}),
+                id: report.id,
+                generated_at: report.generated_at,
+                final_content: fields,
+              }
+            : report,
+        ),
+      )
       setSavedFinal(fields)
       setBaseline(fields)
       setReportDirty(false)
@@ -219,6 +247,28 @@ export function ReportPage() {
         </div>
         <AccountBar />
       </header>
+      <section className="snapshot" aria-label="Saved reports">
+        <h2>Saved reports</h2>
+        {reports.length === 0 ? <p>No reports yet.</p> : null}
+        <ul>
+          {reports.map((report) => {
+            const title =
+              (report.final_content ?? report.draft_content)?.sprint_goal?.trim() ||
+              'Report'
+            return (
+              <li key={report.id}>
+                <button
+                  type="button"
+                  aria-current={report.id === selectedId ? 'true' : undefined}
+                  onClick={() => openReport(report)}
+                >
+                  {title} {formatWhen(report.generated_at)}
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      </section>
       {mode === 'drafting' ? <p>Drafting your report…</p> : null}
       {mode === 'loading' ? <p>Loading the board…</p> : null}
       {mode === 'idle' ? (
@@ -272,12 +322,12 @@ export function ReportPage() {
           <section className="snapshot">
             <h2>Board snapshot</h2>
             <ul>
-              {stories.map((story) => (
+              {snapshot.map((story) => (
                 <li key={story.id}>
                   <TypeIcon type={story.type} />
                   <span>{story.title}</span>
                   <PriorityBadge priority={story.priority} />
-                  <span>{story.status}</span>
+                  <span>{story.status_at_close}</span>
                 </li>
               ))}
             </ul>

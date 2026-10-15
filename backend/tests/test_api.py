@@ -810,8 +810,9 @@ def test_project_report_drafts_from_the_board_without_closing_a_sprint(client):
     pid = project["id"]
     story = _story(client, headers, pid, title="Publish board")
     client.patch(f"/stories/{story['id']}", json={"status": "Done"}, headers=headers)
-    missing = client.get(f"/projects/{pid}/report", headers=headers)
-    assert missing.status_code == 404
+    missing = client.get(f"/projects/{pid}/reports", headers=headers)
+    assert missing.status_code == 200
+    assert missing.json() == []
 
     calls = []
 
@@ -830,22 +831,43 @@ def test_project_report_drafts_from_the_board_without_closing_a_sprint(client):
     )
     assert drafted.status_code == 200
     body = drafted.json()["draft_content"]
+    report_id = drafted.json()["id"]
     assert body["completed_work"] == "Publish board"
     assert body["faculty_notes"] == "Watch the demo"
     assert calls[0]["status"] == "Closed"
     assert calls[0]["any_completed"] is True
     assert calls[0]["stories"][0]["status_at_close"] == "Done"
     assert calls[0]["sprint_goal"] is None
+    assert drafted.json()["stories_snapshot"][0]["title"] == "Publish board"
+    assert drafted.json()["stories_snapshot"][0]["status_at_close"] == "Done"
+
+    client.patch(
+        f"/stories/{story['id']}",
+        json={"title": "Publish board later", "status": "In Progress"},
+        headers=headers,
+    )
+    second = client.post(f"/projects/{pid}/report/draft", json={}, headers=headers)
+    assert second.status_code == 200
+    assert second.json()["id"] != report_id
+    listed = client.get(f"/projects/{pid}/reports", headers=headers).json()
+    assert [row["id"] for row in listed] == [second.json()["id"], report_id]
 
     saved = client.put(
-        f"/projects/{pid}/report",
+        f"/projects/{pid}/reports/{report_id}",
         json={"final_content": REPORT, "reviewed_by": "Ada"},
         headers=headers,
     )
     assert saved.status_code == 200
-    again = client.get(f"/projects/{pid}/report", headers=headers).json()
+    again = client.get(f"/projects/{pid}/reports/{report_id}", headers=headers).json()
     assert again["final_content"]["completed_work"] == "Done the board"
     assert again["project_id"] == pid
+    kept = client.get(f"/projects/{pid}/reports/{second.json()['id']}", headers=headers).json()
+    assert kept["final_content"] is None
+    assert kept["stories_snapshot"][0]["title"] == "Publish board later"
+    assert kept["stories_snapshot"][0]["status_at_close"] == "In Progress"
+    frozen = client.get(f"/projects/{pid}/reports/{report_id}", headers=headers).json()
+    assert frozen["stories_snapshot"][0]["title"] == "Publish board"
+    assert frozen["stories_snapshot"][0]["status_at_close"] == "Done"
 
     bare = _project(client, headers, name="Empty board")
     nothing = client.post(f"/projects/{bare['id']}/report/draft", json={}, headers=headers)

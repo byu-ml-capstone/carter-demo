@@ -654,63 +654,77 @@ class WorkspaceDAO:
             "stories": stories,
         }
 
-    def save_project_draft(self, project_id: str, draft: dict, generated_at: str) -> None:
+    def save_project_draft(
+        self, project_id: str, draft: dict, generated_at: str, stories: list
+    ) -> dict:
+        report_id = _id()
         payload = json.dumps(draft)
+        frozen = json.dumps(stories)
         with self.db.connect() as conn:
             self._require_project(conn, project_id)
-            existing = conn.execute(
-                "SELECT id FROM project_reports WHERE project_id = ?", (project_id,)
-            ).fetchone()
-            if existing is None:
-                conn.execute(
-                    """
-                    INSERT INTO project_reports (
-                        id, project_id, draft_content, final_content, generated_at,
-                        reviewed_by, reviewed_at
-                    ) VALUES (?, ?, ?, NULL, ?, NULL, NULL)
-                    """,
-                    (_id(), project_id, payload, generated_at),
-                )
-            else:
-                conn.execute(
-                    """
-                    UPDATE project_reports
-                    SET draft_content = ?, generated_at = ?
-                    WHERE project_id = ?
-                    """,
-                    (payload, generated_at, project_id),
-                )
-
-    def save_project_final(self, project_id: str, final: dict, reviewed_by: str | None) -> dict:
-        with self.db.connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO project_reports (
+                    id, project_id, draft_content, final_content, generated_at,
+                    reviewed_by, reviewed_at, stories_snapshot
+                ) VALUES (?, ?, ?, NULL, ?, NULL, NULL, ?)
+                """,
+                (report_id, project_id, payload, generated_at, frozen),
+            )
             row = conn.execute(
-                "SELECT * FROM project_reports WHERE project_id = ?", (project_id,)
+                "SELECT * FROM project_reports WHERE id = ?", (report_id,)
             ).fetchone()
-            if row is None:
-                raise AppError(404, "Report not found")
+        return _project_report_public(row)
+
+    def save_project_final(
+        self, project_id: str, report_id: str, final: dict, reviewed_by: str | None
+    ) -> dict:
+        with self.db.connect() as conn:
+            row = self._project_report_row(conn, project_id, report_id)
             reviewed_at = now()
             conn.execute(
                 """
                 UPDATE project_reports
                 SET final_content = ?, reviewed_by = ?, reviewed_at = ?
-                WHERE project_id = ?
+                WHERE id = ?
                 """,
-                (json.dumps(final), reviewed_by, reviewed_at, project_id),
+                (json.dumps(final), reviewed_by, reviewed_at, row["id"]),
             )
             updated = conn.execute(
-                "SELECT * FROM project_reports WHERE project_id = ?", (project_id,)
+                "SELECT * FROM project_reports WHERE id = ?", (row["id"],)
             ).fetchone()
         return _project_report_public(updated)
 
-    def get_project_report(self, project_id: str) -> dict:
+    def list_project_reports(self, project_id: str) -> list[dict]:
         with self.db.connect() as conn:
             self._require_project(conn, project_id)
-            row = conn.execute(
-                "SELECT * FROM project_reports WHERE project_id = ?", (project_id,)
-            ).fetchone()
+            rows = conn.execute(
+                """
+                SELECT * FROM project_reports
+                WHERE project_id = ?
+                ORDER BY generated_at DESC, id DESC
+                """,
+                (project_id,),
+            ).fetchall()
+        return [_project_report_public(row) for row in rows]
+
+    def get_project_report(self, project_id: str, report_id: str) -> dict:
+        with self.db.connect() as conn:
+            row = self._project_report_row(conn, project_id, report_id)
+        return _project_report_public(row)
+
+    def _project_report_row(self, conn, project_id: str, report_id: str) -> sqlite3.Row:
+        self._require_project(conn, project_id)
+        row = conn.execute(
+            """
+            SELECT * FROM project_reports
+            WHERE id = ? AND project_id = ?
+            """,
+            (report_id, project_id),
+        ).fetchone()
         if row is None:
             raise AppError(404, "Report not found")
-        return _project_report_public(row)
+        return row
 
     def get_report(self, sprint_id: str) -> dict:
         with self.db.connect() as conn:
@@ -842,9 +856,12 @@ class WorkspaceDAO:
 
 def _project_report_public(row: sqlite3.Row) -> dict:
     final = row["final_content"]
+    keys = row.keys()
+    frozen = row["stories_snapshot"] if "stories_snapshot" in keys and row["stories_snapshot"] else "[]"
     return {
         "id": row["id"],
         "project_id": row["project_id"],
+        "stories_snapshot": json.loads(frozen),
         "draft_content": json.loads(row["draft_content"]),
         "final_content": json.loads(final) if final else None,
         "generated_at": row["generated_at"],

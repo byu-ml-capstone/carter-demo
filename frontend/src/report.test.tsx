@@ -95,11 +95,18 @@ describe('report page', () => {
       if (path === '/projects/p1/stories') return { json: stories }
       if (path === '/projects/p1/members')
         return { json: [{ id: 'ann', name: 'Ann' }] }
-      if (path === '/projects/p1/report' && call.method === 'GET')
-        return { status: 404, json: { detail: 'missing' } }
+      if (path === '/projects/p1/reports' && call.method === 'GET')
+        return { json: [] }
       if (path === '/projects/p1/report/draft')
-        return { json: { draft_content: current } }
-      if (path === '/projects/p1/report' && call.method === 'PUT') {
+        return {
+          json: {
+            id: current.sprint_goal === 'After regen' ? 'r2' : 'r1',
+            generated_at: '2024-06-01T15:04:00.000Z',
+            draft_content: current,
+            final_content: null,
+          },
+        }
+      if (path === '/projects/p1/reports/r1' && call.method === 'PUT') {
         return saveStatus === 200
           ? {
               json: {
@@ -180,11 +187,12 @@ describe('report page', () => {
       calls.filter((call) => pathOf(call.url).endsWith('/report/draft')).length,
     ).toBeGreaterThan(1)
 
-    await user.click(screen.getByRole('button', { name: 'Discard draft' }))
     expect(
-      screen.getByRole('button', { name: 'Edit report' }),
-    ).toBeInTheDocument()
-    expect(screen.getByText('Edited goal')).toBeInTheDocument()
+      screen.getAllByRole('button', { name: /Ship the board|After regen|Edited goal/ })
+        .length,
+    ).toBeGreaterThan(1)
+    await user.click(screen.getByRole('button', { name: /Edited goal/ }))
+    expect(await screen.findByText('Edited goal')).toBeInTheDocument()
   })
 
   it('fills empty draft fields and can leave or stay', async () => {
@@ -194,8 +202,8 @@ describe('report page', () => {
       if (path === '/projects/p1/stories')
         return { json: [stories[1]] }
       if (path.endsWith('/members')) return { json: [] }
-      if (path.endsWith('/report') && call.method === 'GET')
-        return { status: 404, json: { detail: 'missing' } }
+      if (path.endsWith('/reports') && call.method === 'GET')
+        return { json: [] }
       if (path.endsWith('/report/draft')) {
         return {
           json: {
@@ -206,6 +214,9 @@ describe('report page', () => {
               blockers: '   ',
               faculty_notes: '',
             },
+            id: 'r1',
+            generated_at: '2024-06-01T15:04:00.000Z',
+            final_content: null,
           },
         }
       }
@@ -247,19 +258,32 @@ describe('report page', () => {
       if (path.endsWith('/report/draft')) {
         if (mode === 'error') return { status: 500, json: { detail: 'down' } }
         if (mode === 'empty') return { status: 422, json: { detail: 'nothing' } }
-        return { json: { draft_content: draft } }
-      }
-      if (mode === 'final' && path.endsWith('/report') && call.method === 'GET') {
         return {
           json: {
-            final_content: {
-              sprint_goal: 'Goal',
-              completed_work: NONE_COMPLETED,
-              next_sprint_goals: 'Next',
-              blockers: NO_BLOCKERS,
-              faculty_notes: NO_FACULTY_NOTES,
-            },
+            id: 'r2',
+            generated_at: '2024-06-02T15:04:00.000Z',
+            draft_content: draft,
+            final_content: null,
           },
+        }
+      }
+      if (path.endsWith('/reports') && call.method === 'GET') {
+        if (mode !== 'final') return { json: [] }
+        return {
+          json: [
+            {
+              id: 'r1',
+              generated_at: '2024-06-01T15:04:00.000Z',
+              draft_content: null,
+              final_content: {
+                sprint_goal: 'Goal',
+                completed_work: NONE_COMPLETED,
+                next_sprint_goals: 'Next',
+                blockers: NO_BLOCKERS,
+                faculty_notes: NO_FACULTY_NOTES,
+              },
+            },
+          ],
         }
       }
       return { status: 404, json: { detail: 'missing' } }
@@ -315,11 +339,27 @@ describe('report page', () => {
       if (path.endsWith('/members')) return { json: [] }
       if (path.endsWith('/report/draft')) {
         return draftStatus === 200
-          ? { json: { draft_content: draft } }
+          ? {
+              json: {
+                id: 'r2',
+                generated_at: '2024-06-02T15:04:00.000Z',
+                draft_content: draft,
+                final_content: null,
+              },
+            }
           : { status: draftStatus, json: { detail: 'empty' } }
       }
-      if (path.endsWith('/report') && call.method === 'GET') {
-        return { json: { draft_content: draft, final_content: null } }
+      if (path.endsWith('/reports') && call.method === 'GET') {
+        return {
+          json: [
+            {
+              id: 'r1',
+              generated_at: '2024-06-01T15:04:00.000Z',
+              draft_content: draft,
+              final_content: null,
+            },
+          ],
+        }
       }
       return { json: [] }
     })
