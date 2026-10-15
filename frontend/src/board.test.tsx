@@ -288,7 +288,9 @@ describe('board', () => {
       status: 409,
       json: { detail: 'There is no active sprint right now' },
     }
-    fireEvent.click(within(progress).getByRole('button', { name: 'Move story' }))
+    fireEvent.click(
+      within(progress).getByRole('button', { name: 'Move story' }),
+    )
     fireEvent.click(screen.getByRole('button', { name: 'Move to: Backlog' }))
     const backlogColumn = document.querySelector(
       '[data-column="Backlog"]',

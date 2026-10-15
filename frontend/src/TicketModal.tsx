@@ -155,98 +155,99 @@ export function TicketModal({
         </button>
       </header>
       <div className="ticket-body">
-      <label>
-        Description
-        <textarea
-          value={description}
-          onChange={(event) => {
-            setDescription(event.target.value)
-            setDescriptionDirty(true)
-          }}
-          onBlur={() => {
-            const next = description.trim()
-            const current = story.description ?? ''
-            if (next !== current) void save({ description: next || null })
-            setDescriptionDirty(false)
-          }}
-        />
-      </label>
-      <div className="meta-row">
         <label>
-          Status
-          <select
-            value={story.status}
-            onChange={(event) => onMove(story, event.target.value as Status)}
-          >
-            {STATUSES.map((status) => (
-              <option key={status} value={status}>
-                {status}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Priority
-          <select
-            value={story.priority}
+          Description
+          <textarea
+            value={description}
             onChange={(event) => {
-              const priority = event.target.value as Priority
-              if (priority !== story.priority) void save({ priority })
+              setDescription(event.target.value)
+              setDescriptionDirty(true)
             }}
-          >
-            {PRIORITIES.map((priority) => (
-              <option key={priority} value={priority}>
-                {priority}
-              </option>
-            ))}
-          </select>
+            onBlur={() => {
+              const next = description.trim()
+              const current = story.description ?? ''
+              if (next !== current) void save({ description: next || null })
+              setDescriptionDirty(false)
+            }}
+          />
         </label>
+        <div className="meta-row">
+          <label>
+            Status
+            <select
+              value={story.status}
+              onChange={(event) => onMove(story, event.target.value as Status)}
+            >
+              {STATUSES.map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Priority
+            <select
+              value={story.priority}
+              onChange={(event) => {
+                const priority = event.target.value as Priority
+                if (priority !== story.priority) void save({ priority })
+              }}
+            >
+              {PRIORITIES.map((priority) => (
+                <option key={priority} value={priority}>
+                  {priority}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Type
+            <select
+              value={story.type}
+              onChange={(event) => {
+                const type = event.target.value as StoryType
+                if (type !== story.type) void save({ type })
+              }}
+            >
+              {STORY_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
         <label>
-          Type
-          <select
-            value={story.type}
+          GitHub branch reference
+          <input
+            className="branch-input"
+            placeholder="branch name, optional"
+            value={branch}
             onChange={(event) => {
-              const type = event.target.value as StoryType
-              if (type !== story.type) void save({ type })
+              setBranch(event.target.value)
+              setBranchDirty(true)
             }}
-          >
-            {STORY_TYPES.map((type) => (
-              <option key={type} value={type}>
-                {type}
-              </option>
-            ))}
-          </select>
+            onBlur={() => {
+              const next = branch.trim()
+              const current = story.github_branch_ref ?? ''
+              if (next !== current)
+                void save({ github_branch_ref: next || null })
+              setBranchDirty(false)
+            }}
+          />
         </label>
-      </div>
-      <label>
-        GitHub branch reference
-        <input
-          className="branch-input"
-          placeholder="branch name, optional"
-          value={branch}
-          onChange={(event) => {
-            setBranch(event.target.value)
-            setBranchDirty(true)
-          }}
-          onBlur={() => {
-            const next = branch.trim()
-            const current = story.github_branch_ref ?? ''
-            if (next !== current) void save({ github_branch_ref: next || null })
-            setBranchDirty(false)
-          }}
+        <CommentThread
+          projectId={story.project_id}
+          parent={{ kind: 'story', id: story.id }}
+          members={members}
+          comments={comments}
+          email={email}
+          draft={draft}
+          onDraft={onDraft}
+          onPosted={onPosted}
+          onOpenTeam={onOpenTeam}
         />
-      </label>
-      <CommentThread
-        projectId={story.project_id}
-        parent={{ kind: 'story', id: story.id }}
-        members={members}
-        comments={comments}
-        email={email}
-        draft={draft}
-        onDraft={onDraft}
-        onPosted={onPosted}
-        onOpenTeam={onOpenTeam}
-      />
       </div>
     </dialog>
   )

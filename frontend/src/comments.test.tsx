@@ -79,9 +79,7 @@ describe('comments', () => {
     await user.selectOptions(screen.getByLabelText('Your name'), '')
     await user.selectOptions(screen.getByLabelText('Your name'), 'ann')
     expect(localStorage.getItem('my-workspace:author:p1')).toBe('ann')
-    const box = screen.getByPlaceholderText(
-      'Write a comment or tag a teammate',
-    )
+    const box = screen.getByPlaceholderText('Write a comment or tag a teammate')
     fireEvent.select(box, { target: { selectionStart: 6 } })
     fireEvent.keyDown(box, { key: 'ArrowDown' })
     fireEvent.keyDown(box, { key: 'ArrowUp' })
@@ -185,7 +183,9 @@ describe('comments', () => {
     )
     expect(screen.queryByText('No comments yet.')).toBeNull()
     expect(
-      screen.getByRole('button', { name: 'Add a teammate' }).closest('.composer'),
+      screen
+        .getByRole('button', { name: 'Add a teammate' })
+        .closest('.composer'),
     ).not.toBeNull()
     await user.click(screen.getByRole('button', { name: 'Add a teammate' }))
     await user.click(
@@ -194,9 +194,7 @@ describe('comments', () => {
       }),
     )
     expect(onOpenTeam).toHaveBeenCalledTimes(2)
-    const box = screen.getByPlaceholderText(
-      'Write a comment or tag a teammate',
-    )
+    const box = screen.getByPlaceholderText('Write a comment or tag a teammate')
     fireEvent.change(box, { target: { value: 'a@Ann', selectionStart: 2 } })
     fireEvent.change(box, {
       target: { value: '@Ann\nmore', selectionStart: 8 },

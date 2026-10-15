@@ -564,7 +564,6 @@ export function WorkspacePage() {
               </button>
             </div>
           </div>
-
         </div>
 
         {/* Controls toolbar */}
@@ -749,7 +748,10 @@ export function WorkspacePage() {
           >
             {active.goal?.trim() ? (
               <span
-                style={{ fontSize: '0.875rem', color: 'var(--color-on-surface)' }}
+                style={{
+                  fontSize: '0.875rem',
+                  color: 'var(--color-on-surface)',
+                }}
               >
                 {active.goal.trim()}
               </span>
@@ -1129,26 +1131,26 @@ export function WorkspacePage() {
                 {visible.map((story) => (
                   <StoryCard
                     key={story.id}
-                      story={story}
-                      dragging={draggingId === story.id}
-                      inflight={inflight === story.id}
-                      menuOpen={menuFor === story.id}
-                      onOpen={() => {
-                        setMenuFor(null)
-                        setOpenId(story.id)
-                      }}
-                      onDragStart={() => setDraggingId(story.id)}
-                      onDragEnd={(x, y) => dropOn(story.id, x, y)}
-                      onToggleMenu={() =>
-                        setMenuFor((current) =>
-                          current === story.id ? null : story.id,
-                        )
-                      }
-                      onMove={(status) => {
-                        setMenuFor(null)
-                        void moveStory(story, status)
-                      }}
-                    />
+                    story={story}
+                    dragging={draggingId === story.id}
+                    inflight={inflight === story.id}
+                    menuOpen={menuFor === story.id}
+                    onOpen={() => {
+                      setMenuFor(null)
+                      setOpenId(story.id)
+                    }}
+                    onDragStart={() => setDraggingId(story.id)}
+                    onDragEnd={(x, y) => dropOn(story.id, x, y)}
+                    onToggleMenu={() =>
+                      setMenuFor((current) =>
+                        current === story.id ? null : story.id,
+                      )
+                    }
+                    onMove={(status) => {
+                      setMenuFor(null)
+                      void moveStory(story, status)
+                    }}
+                  />
                 ))}
               </section>
             )
@@ -1605,231 +1607,233 @@ function StoryCard({
           aria-hidden="true"
         />
       ) : null}
-    <article
-      data-story-id={story.id}
-      tabIndex={-1}
-      className={dragging ? 'story-card lifting' : 'story-card'}
-      style={{
-        background: 'var(--color-surface-container-lowest)',
-        borderRadius: '0.75rem',
-        padding: '1rem',
-        marginBottom: 0,
-        boxShadow: flight
-          ? '0 20px 30px -10px rgba(15,23,42,0.12)'
-          : '0 1px 2px rgba(15, 23, 42, 0.04)',
-        cursor: flight ? 'grabbing' : 'grab',
-        userSelect: holding || dragging ? 'none' : 'auto',
-        WebkitUserSelect: holding || dragging ? 'none' : 'auto',
-        opacity: inflight ? 0.5 : 1,
-        pointerEvents: flight ? 'none' : 'auto',
-        position: flight ? 'fixed' : 'relative',
-        left: flight?.left,
-        top: flight?.top,
-        width: flight?.width,
-        zIndex: flight ? 40 : 'auto',
-        transition: flight ? undefined : 'opacity 0.15s, box-shadow 0.15s',
-      }}
-      onPointerDown={pointerDown}
-    >
-      {/* Card header */}
-      <div
+      <article
+        data-story-id={story.id}
+        tabIndex={-1}
+        className={dragging ? 'story-card lifting' : 'story-card'}
         style={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          gap: '0.5rem',
-          marginBottom: '0.5rem',
+          background: 'var(--color-surface-container-lowest)',
+          borderRadius: '0.75rem',
+          padding: '1rem',
+          marginBottom: 0,
+          boxShadow: flight
+            ? '0 20px 30px -10px rgba(15,23,42,0.12)'
+            : '0 1px 2px rgba(15, 23, 42, 0.04)',
+          cursor: flight ? 'grabbing' : 'grab',
+          userSelect: holding || dragging ? 'none' : 'auto',
+          WebkitUserSelect: holding || dragging ? 'none' : 'auto',
+          opacity: inflight ? 0.5 : 1,
+          pointerEvents: flight ? 'none' : 'auto',
+          position: flight ? 'fixed' : 'relative',
+          left: flight?.left,
+          top: flight?.top,
+          width: flight?.width,
+          zIndex: flight ? 40 : 'auto',
+          transition: flight ? undefined : 'opacity 0.15s, box-shadow 0.15s',
         }}
+        onPointerDown={pointerDown}
       >
+        {/* Card header */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            gap: '0.5rem',
+            marginBottom: '0.5rem',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.375rem',
+              minWidth: 0,
+            }}
+          >
+            <span
+              style={{
+                fontFamily: 'var(--font-family-mono)',
+                fontSize: '0.6875rem',
+                color: 'var(--color-outline)',
+                flexShrink: 0,
+              }}
+            >
+              {storyId}
+            </span>
+            <TypeIcon type={story.type} />
+            <span className="type-word">{story.type}</span>
+          </div>
+
+          <div
+            style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+          >
+            {story.status === 'Done' ? (
+              <span
+                className="material-symbols-outlined"
+                aria-hidden="true"
+                style={{
+                  fontSize: '16px',
+                  color: '#3b7a57',
+                  flexShrink: 0,
+                }}
+              >
+                check_circle
+              </span>
+            ) : null}
+            <button
+              type="button"
+              data-no-drag
+              aria-label="Move story"
+              onClick={onToggleMenu}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '1.5rem',
+                height: '1.5rem',
+                background: 'none',
+                border: 'none',
+                borderRadius: '0.25rem',
+                color: 'var(--color-on-surface-variant)',
+                cursor: 'pointer',
+                flexShrink: 0,
+              }}
+            >
+              <span
+                className="material-symbols-outlined"
+                aria-hidden="true"
+                style={{ fontSize: '16px' }}
+              >
+                more_horiz
+              </span>
+            </button>
+          </div>
+        </div>
+
+        {/* Move menu */}
+        {menuOpen ? (
+          <ul
+            data-no-drag
+            style={{
+              position: 'absolute',
+              top: '2.5rem',
+              right: '0.5rem',
+              zIndex: 20,
+              listStyle: 'none',
+              margin: 0,
+              padding: '0.25rem',
+              background: 'var(--color-surface-container-lowest)',
+              borderRadius: '0.5rem',
+              border: '1px solid var(--color-outline-variant)',
+              boxShadow: '0 8px 16px -4px rgba(15,23,42,0.08)',
+              minWidth: '10rem',
+            }}
+          >
+            {STATUSES.map((status) => (
+              <li key={status}>
+                <button
+                  type="button"
+                  disabled={status === story.status}
+                  onClick={() => onMove(status)}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '0.375rem 0.625rem',
+                    background: 'none',
+                    border: 'none',
+                    borderRadius: '0.375rem',
+                    fontSize: '0.8125rem',
+                    color:
+                      status === story.status
+                        ? 'var(--color-on-surface-variant)'
+                        : 'var(--color-on-surface)',
+                    cursor: status === story.status ? 'default' : 'pointer',
+                    opacity: status === story.status ? 0.5 : 1,
+                  }}
+                >
+                  Move to: {status}
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+
+        {/* Title */}
+        <h3
+          style={{
+            margin: '0 0 0.5rem',
+            fontSize: '0.875rem',
+            fontWeight: 600,
+            lineHeight: '1.375rem',
+            color: 'var(--color-on-surface)',
+            textDecoration: story.status === 'Done' ? 'line-through' : 'none',
+            textDecorationColor:
+              story.status === 'Done'
+                ? 'color-mix(in srgb, var(--color-on-surface-variant) 40%, transparent)'
+                : 'transparent',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+          }}
+        >
+          {story.title}
+        </h3>
+
+        {/* Meta row */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '0.375rem',
-            minWidth: 0,
+            gap: '0.5rem',
+            flexWrap: 'wrap',
           }}
         >
-          <span
-            style={{
-              fontFamily: 'var(--font-family-mono)',
-              fontSize: '0.6875rem',
-              color: 'var(--color-outline)',
-              flexShrink: 0,
-            }}
-          >
-            {storyId}
-          </span>
-          <TypeIcon type={story.type} />
-          <span className="type-word">{story.type}</span>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-          {story.status === 'Done' ? (
-            <span
-              className="material-symbols-outlined"
-              aria-hidden="true"
-              style={{
-                fontSize: '16px',
-                color: '#3b7a57',
-                flexShrink: 0,
-              }}
-            >
-              check_circle
-            </span>
-          ) : null}
-          <button
-            type="button"
-            data-no-drag
-            aria-label="Move story"
-            onClick={onToggleMenu}
+          <PriorityBadge priority={story.priority} />
+          <time
+            dateTime={story.created_at}
             style={{
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              width: '1.5rem',
-              height: '1.5rem',
-              background: 'none',
-              border: 'none',
-              borderRadius: '0.25rem',
+              gap: '0.25rem',
+              fontSize: '0.75rem',
               color: 'var(--color-on-surface-variant)',
-              cursor: 'pointer',
-              flexShrink: 0,
             }}
           >
             <span
               className="material-symbols-outlined"
               aria-hidden="true"
-              style={{ fontSize: '16px' }}
+              style={{ fontSize: '12px' }}
             >
-              more_horiz
+              event
             </span>
-          </button>
+            {formatDate(story.created_at)}
+          </time>
         </div>
-      </div>
 
-      {/* Move menu */}
-      {menuOpen ? (
-        <ul
-          data-no-drag
-          style={{
-            position: 'absolute',
-            top: '2.5rem',
-            right: '0.5rem',
-            zIndex: 20,
-            listStyle: 'none',
-            margin: 0,
-            padding: '0.25rem',
-            background: 'var(--color-surface-container-lowest)',
-            borderRadius: '0.5rem',
-            border: '1px solid var(--color-outline-variant)',
-            boxShadow: '0 8px 16px -4px rgba(15,23,42,0.08)',
-            minWidth: '10rem',
-          }}
-        >
-          {STATUSES.map((status) => (
-            <li key={status}>
-              <button
-                type="button"
-                disabled={status === story.status}
-                onClick={() => onMove(status)}
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  textAlign: 'left',
-                  padding: '0.375rem 0.625rem',
-                  background: 'none',
-                  border: 'none',
-                  borderRadius: '0.375rem',
-                  fontSize: '0.8125rem',
-                  color:
-                    status === story.status
-                      ? 'var(--color-on-surface-variant)'
-                      : 'var(--color-on-surface)',
-                  cursor: status === story.status ? 'default' : 'pointer',
-                  opacity: status === story.status ? 0.5 : 1,
-                }}
-              >
-                Move to: {status}
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-
-      {/* Title */}
-      <h3
-        style={{
-          margin: '0 0 0.5rem',
-          fontSize: '0.875rem',
-          fontWeight: 600,
-          lineHeight: '1.375rem',
-          color: 'var(--color-on-surface)',
-          textDecoration: story.status === 'Done' ? 'line-through' : 'none',
-          textDecorationColor:
-            story.status === 'Done'
-              ? 'color-mix(in srgb, var(--color-on-surface-variant) 40%, transparent)'
-              : 'transparent',
-          display: '-webkit-box',
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: 'vertical',
-          overflow: 'hidden',
-        }}
-      >
-        {story.title}
-      </h3>
-
-      {/* Meta row */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          flexWrap: 'wrap',
-        }}
-      >
-        <PriorityBadge priority={story.priority} />
-        <time
-          dateTime={story.created_at}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.25rem',
-            fontSize: '0.75rem',
-            color: 'var(--color-on-surface-variant)',
-          }}
-        >
-          <span
-            className="material-symbols-outlined"
-            aria-hidden="true"
-            style={{ fontSize: '12px' }}
+        {/* Branch ref */}
+        {story.github_branch_ref ? (
+          <p
+            style={{
+              margin: '0.5rem 0 0',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.25rem',
+              fontSize: '0.75rem',
+              color: 'var(--color-on-surface-variant)',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+            title={story.github_branch_ref}
           >
-            event
-          </span>
-          {formatDate(story.created_at)}
-        </time>
-      </div>
-
-      {/* Branch ref */}
-      {story.github_branch_ref ? (
-        <p
-          style={{
-            margin: '0.5rem 0 0',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.25rem',
-            fontSize: '0.75rem',
-            color: 'var(--color-on-surface-variant)',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
-          title={story.github_branch_ref}
-        >
-          <BranchIcon />
-          <span>{story.github_branch_ref}</span>
-        </p>
-      ) : null}
-    </article>
+            <BranchIcon />
+            <span>{story.github_branch_ref}</span>
+          </p>
+        ) : null}
+      </article>
     </div>
   )
 }
@@ -1926,106 +1930,113 @@ export function TeamDialog({
       </div>
 
       <div className="team-body">
-      {members.length === 0 ? (
-        <p className="empty-line" style={{ textAlign: 'left', padding: '0 0 12px' }}>
-          No teammates yet.
-        </p>
-      ) : (
-      <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1rem' }}>
-        {members.map((member) => (
-          <li
-            key={member.id}
+        {members.length === 0 ? (
+          <p
+            className="empty-line"
+            style={{ textAlign: 'left', padding: '0 0 12px' }}
+          >
+            No teammates yet.
+          </p>
+        ) : (
+          <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1rem' }}>
+            {members.map((member) => (
+              <li
+                key={member.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  padding: '0.5rem 0',
+                  borderBottom: '1px solid var(--color-outline-variant)',
+                  fontSize: '0.875rem',
+                  color: 'var(--color-on-surface)',
+                }}
+              >
+                <div
+                  style={{
+                    width: '1.75rem',
+                    height: '1.75rem',
+                    borderRadius: '9999px',
+                    background: 'var(--color-primary-container)',
+                    color: 'var(--color-on-primary-container)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.6875rem',
+                    fontWeight: 600,
+                    flexShrink: 0,
+                  }}
+                >
+                  {member.name[0]?.toUpperCase() ?? '?'}
+                </div>
+                {member.name}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <form
+          onSubmit={(event) => void add(event)}
+          style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}
+        >
+          <div
             style={{
               display: 'flex',
-              alignItems: 'center',
-              gap: '0.75rem',
-              padding: '0.5rem 0',
-              borderBottom: '1px solid var(--color-outline-variant)',
-              fontSize: '0.875rem',
-              color: 'var(--color-on-surface)',
+              flexDirection: 'column',
+              gap: '0.375rem',
             }}
           >
-            <div
+            <label
+              htmlFor="team-member-name"
               style={{
-                width: '1.75rem',
-                height: '1.75rem',
-                borderRadius: '9999px',
-                background: 'var(--color-primary-container)',
-                color: 'var(--color-on-primary-container)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '0.6875rem',
-                fontWeight: 600,
-                flexShrink: 0,
+                fontSize: '0.75rem',
+                fontWeight: 500,
+                color: 'var(--color-on-surface-variant)',
               }}
             >
-              {member.name[0]?.toUpperCase() ?? '?'}
-            </div>
-            {member.name}
-          </li>
-        ))}
-      </ul>
-      )}
-
-      <form
-        onSubmit={(event) => void add(event)}
-        style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}
-      >
-        <div
-          style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}
-        >
-          <label
-            htmlFor="team-member-name"
+              Name
+            </label>
+            <input
+              id="team-member-name"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder="Teammate's name"
+              style={{
+                height: '2.75rem',
+                padding: '0 0.75rem',
+                background: 'var(--color-surface-container-low)',
+                border: '1px solid var(--color-outline-variant)',
+                borderRadius: '0.5rem',
+                fontSize: '0.875rem',
+                color: 'var(--color-on-surface)',
+                outline: 'none',
+              }}
+            />
+          </div>
+          {error ? <p className="field-error">{error}</p> : null}
+          <button
+            type="submit"
+            disabled={!name.trim()}
             style={{
-              fontSize: '0.75rem',
-              fontWeight: 500,
-              color: 'var(--color-on-surface-variant)',
-            }}
-          >
-            Name
-          </label>
-          <input
-            id="team-member-name"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            placeholder="Teammate's name"
-            style={{
-              height: '2.75rem',
-              padding: '0 0.75rem',
-              background: 'var(--color-surface-container-low)',
-              border: '1px solid var(--color-outline-variant)',
+              width: '100%',
+              height: '36px',
+              padding: '0 1rem',
+              background: name.trim()
+                ? 'var(--color-primary)'
+                : 'var(--color-surface-container-high)',
+              color: name.trim()
+                ? 'var(--color-on-primary)'
+                : 'var(--color-on-surface-variant)',
+              border: 'none',
               borderRadius: '0.5rem',
               fontSize: '0.875rem',
-              color: 'var(--color-on-surface)',
-              outline: 'none',
+              fontWeight: 500,
+              cursor: name.trim() ? 'pointer' : 'not-allowed',
             }}
-          />
-        </div>
-        {error ? <p className="field-error">{error}</p> : null}
-        <button
-          type="submit"
-          disabled={!name.trim()}
-          style={{
-            width: '100%',
-            height: '36px',
-            padding: '0 1rem',
-            background: name.trim()
-              ? 'var(--color-primary)'
-              : 'var(--color-surface-container-high)',
-            color: name.trim()
-              ? 'var(--color-on-primary)'
-              : 'var(--color-on-surface-variant)',
-            border: 'none',
-            borderRadius: '0.5rem',
-            fontSize: '0.875rem',
-            fontWeight: 500,
-            cursor: name.trim() ? 'pointer' : 'not-allowed',
-          }}
-        >
-          Add teammate
-        </button>
-      </form>
+          >
+            Add teammate
+          </button>
+        </form>
       </div>
     </dialog>
   )
