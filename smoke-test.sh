@@ -38,7 +38,7 @@ fi
 echo -n "waiting for /health "
 ready=0
 for _ in $(seq 1 60); do
-    if curl -sS "$BASE_URL/health" 2>/dev/null | python3 -c 'import json,sys; json.load(sys.stdin)["ok"]' >/dev/null 2>&1; then
+    if curl -sSL "$BASE_URL/health" 2>/dev/null | python3 -c 'import json,sys; json.load(sys.stdin)["ok"]' >/dev/null 2>&1; then
         ready=1
         echo " ready"
         break
@@ -55,30 +55,30 @@ fi
 
 echo
 echo "=== GET /health ==="
-curl -sS "$BASE_URL/health"
+curl -sSL "$BASE_URL/health"
 echo
 echo "=== GET /version ==="
-curl -sS "$BASE_URL/version"
+curl -sSL "$BASE_URL/version"
 echo
 echo "=== POST /auth/register ==="
 SMOKE_EMAIL="smoke-$(date +%s)@example.com"
 extract_token() {
     python3 -c 'import json,sys; print(json.load(sys.stdin)["token"])'
 }
-AUTH_JSON=$(curl -sS -X POST "$BASE_URL/auth/register" \
+AUTH_JSON=$(curl -sSL -X POST "$BASE_URL/auth/register" \
     -H 'Content-Type: application/json' \
     -d "{\"email\":\"$SMOKE_EMAIL\",\"password\":\"password1\"}")
 if ! TOKEN=$(printf '%s' "$AUTH_JSON" | extract_token 2>/dev/null); then
     echo "$AUTH_JSON"
     echo "Register did not return a token; trying login as smoke@example.com..."
-    AUTH_JSON=$(curl -sS -X POST "$BASE_URL/auth/login" \
+    AUTH_JSON=$(curl -sSL -X POST "$BASE_URL/auth/login" \
         -H 'Content-Type: application/json' \
         -d '{"email":"smoke@example.com","password":"password1"}')
     TOKEN=$(printf '%s' "$AUTH_JSON" | extract_token)
 fi
 echo "token received"
 echo "=== POST /projects ==="
-curl -sS -X POST "$BASE_URL/projects" \
+curl -sSL -X POST "$BASE_URL/projects" \
     -H "Authorization: Bearer $TOKEN" \
     -H 'Content-Type: application/json' \
     -d "{\"name\":\"Smoke project $SMOKE_EMAIL\"}"
