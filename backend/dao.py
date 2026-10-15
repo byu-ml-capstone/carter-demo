@@ -3,7 +3,7 @@
 import json
 import sqlite3
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from auth import hash_password, new_token, verify_password
 from db import Database, now
@@ -83,7 +83,7 @@ class WorkspaceDAO:
         user_id = _id()
         raw, token_hash = new_token()
         created = now()
-        expires = (datetime.now(timezone.utc) + timedelta(days=SESSION_DAYS)).isoformat(
+        expires = (datetime.now(UTC) + timedelta(days=SESSION_DAYS)).isoformat(
             timespec="microseconds"
         )
         try:
@@ -117,7 +117,7 @@ class WorkspaceDAO:
                 raise AppError(401, "Email or password is wrong.")
             raw, token_hash = new_token()
             created = now()
-            expires = (datetime.now(timezone.utc) + timedelta(days=SESSION_DAYS)).isoformat(
+            expires = (datetime.now(UTC) + timedelta(days=SESSION_DAYS)).isoformat(
                 timespec="microseconds"
             )
             conn.execute(
