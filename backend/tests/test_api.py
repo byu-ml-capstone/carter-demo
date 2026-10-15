@@ -923,3 +923,64 @@ def test_database_url_and_migration_rollback(tmp_path, monkeypatch):
     database = Database(f"sqlite:///{tmp_path / 'broken.db'}")
     with pytest.raises(sqlite3.Error):
         database.apply_migrations()
+
+
+def test_missing_project_report_and_draft_failures(client, monkeypatch):
+    headers = auth(client)
+    project = _project(client, headers)
+    pid = project["id"]
+    _story(client, headers, pid)
+    missing = client.get(f"/projects/{pid}/reports/missing", headers=headers)
+    assert missing.status_code == 404
+    assert missing.json()["detail"] == "Report not found"
+
+    def raise_app(_snapshot):
+        raise AppError(409, "Sprint is not closed.")
+
+    main.report_drafter = raise_app
+    refused = client.post(f"/projects/{pid}/report/draft", json={}, headers=headers)
+    assert refused.status_code == 409
+
+    class Upstream(Exception):
+        status_code = 429
+        detail = "slow down"
+
+    def raise_upstream(_snapshot):
+        raise Upstream()
+
+    main.report_drafter = raise_upstream
+    limited = client.post(f"/projects/{pid}/report/draft", json={}, headers=headers)
+    assert limited.status_code == 429
+    assert limited.json()["detail"] == "slow down"
+
+    def boom(_snapshot):
+        raise RuntimeError("model down")
+
+    main.report_drafter = boom
+    failed = client.post(f"/projects/{pid}/report/draft", json={}, headers=headers)
+    assert failed.status_code == 502
+    assert client.get(f"/projects/{pid}/reports", headers=headers).json() == []
+
+    sprint_project = _project(client, headers, name="Report sprint")
+    story = _story(client, headers, sprint_project["id"])
+    sprint = _active_sprint(client, headers, sprint_project["id"])
+    client.patch(f"/stories/{story['id']}", json={"status": "Done"}, headers=headers)
+    closed = client.post(f"/sprints/{sprint['id']}/close", headers=headers)
+    assert closed.status_code == 200
+    main.report_drafter = raise_upstream
+    sprint_limited = client.post(f"/sprints/{sprint['id']}/report/draft", headers=headers)
+    assert sprint_limited.status_code == 429
+    assert client.get(f"/sprints/{sprint['id']}/report", headers=headers).status_code == 404
+
+    main.report_drafter = None
+    real_import = builtins.__import__
+
+    def blocked(name, globals=None, locals=None, fromlist=(), level=0):
+        if name == "sprint_report":
+            raise ImportError("sprint_report is not installed")
+        return real_import(name, globals, locals, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", blocked)
+    unconfigured = client.post(f"/projects/{pid}/report/draft", json={}, headers=headers)
+    assert unconfigured.status_code == 503
+    assert unconfigured.json()["detail"] == "Sprint report drafter is not configured."
