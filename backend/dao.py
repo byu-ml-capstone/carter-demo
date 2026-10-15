@@ -857,7 +857,9 @@ class WorkspaceDAO:
 def _project_report_public(row: sqlite3.Row) -> dict:
     final = row["final_content"]
     keys = row.keys()
-    frozen = row["stories_snapshot"] if "stories_snapshot" in keys and row["stories_snapshot"] else "[]"
+    frozen = (
+        row["stories_snapshot"] if "stories_snapshot" in keys and row["stories_snapshot"] else "[]"
+    )
     return {
         "id": row["id"],
         "project_id": row["project_id"],

@@ -258,10 +258,9 @@ describe('board', () => {
     ).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'History' }))
     expect(screen.getByText('First slice')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Generate report' })).toHaveAttribute(
-      'href',
-      '/projects/p1/report',
-    )
+    expect(
+      screen.getByRole('link', { name: 'Generate report' }),
+    ).toHaveAttribute('href', '/projects/p1/report')
 
     const move = async () => {
       const card = screen

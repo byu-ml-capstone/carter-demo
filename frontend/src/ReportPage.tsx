@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useBlocker, useParams } from 'react-router-dom'
 import { api, ApiError, normalizeReport } from './api'
-import { authorKey, consumeSuppressLeave, setReportDirty, suppressLeaveGuard } from './reportGuard'
+import {
+  authorKey,
+  consumeSuppressLeave,
+  setReportDirty,
+  suppressLeaveGuard,
+} from './reportGuard'
 import { AccountBar } from './session'
 import { toast } from './toast'
 import type {
@@ -98,7 +103,8 @@ export function ReportPage() {
 
   function showSaved(report: SavedReport, finished: number) {
     const frozen = report.stories_snapshot ?? []
-    const content = report.final_content ?? report.draft_content ?? EMPTY_REPORT()
+    const content =
+      report.final_content ?? report.draft_content ?? EMPTY_REPORT()
     const finishedThen = frozen.length
       ? frozen.filter((story) => story.status_at_close === 'Done').length
       : finished
@@ -113,7 +119,10 @@ export function ReportPage() {
 
   function openReport(report: SavedReport) {
     if (report.id === selectedId && mode !== 'idle') return
-    if (dirty && !window.confirm('You have unsaved changes to this report — leave anyway?')) {
+    if (
+      dirty &&
+      !window.confirm('You have unsaved changes to this report — leave anyway?')
+    ) {
       return
     }
     setReportDirty(false)
@@ -131,13 +140,13 @@ export function ReportPage() {
       setProject(nextProject)
       setStories(nextStories)
       setMembers(nextMembers)
-      const rows = (
-        await api<SavedReport[]>(`/projects/${projectId}/reports`)
-      )
+      const rows = (await api<SavedReport[]>(`/projects/${projectId}/reports`))
         .map((row) => normalizeReport(row))
         .filter((row): row is SavedReport => row !== null && Boolean(row.id))
       setReports(rows)
-      const finished = nextStories.filter((story) => story.status === 'Done').length
+      const finished = nextStories.filter(
+        (story) => story.status === 'Done',
+      ).length
       if (rows[0]) showSaved(rows[0], finished)
       else {
         setSelectedId(null)
@@ -196,12 +205,12 @@ export function ReportPage() {
     try {
       const updated = normalizeReport(
         await api<SavedReport>(`/projects/${projectId}/reports/${selectedId}`, {
-        method: 'PUT',
-        body: {
-          final_content: fields,
-          reviewed_by: reviewedBy,
-        },
-      }),
+          method: 'PUT',
+          body: {
+            final_content: fields,
+            reviewed_by: reviewedBy,
+          },
+        }),
       )
       setReports((current) =>
         current.map((report) =>
@@ -253,8 +262,9 @@ export function ReportPage() {
         <ul>
           {reports.map((report) => {
             const title =
-              (report.final_content ?? report.draft_content)?.sprint_goal?.trim() ||
-              'Report'
+              (
+                report.final_content ?? report.draft_content
+              )?.sprint_goal?.trim() || 'Report'
             return (
               <li key={report.id}>
                 <button

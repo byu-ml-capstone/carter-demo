@@ -330,9 +330,7 @@ def list_project_reports(project_id: str, _user: dict = Depends(require_user)):
 
 
 @app.get("/projects/{project_id}/reports/{report_id}")
-def get_project_report(
-    project_id: str, report_id: str, _user: dict = Depends(require_user)
-):
+def get_project_report(project_id: str, report_id: str, _user: dict = Depends(require_user)):
     return dao.get_project_report(project_id, report_id)
 
 

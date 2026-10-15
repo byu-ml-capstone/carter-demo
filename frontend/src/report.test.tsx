@@ -18,7 +18,9 @@ const project = {
   created_at: '2024-01-01T00:00:00.000Z',
 }
 
-function story(partial: Partial<Story> & Pick<Story, 'id' | 'title' | 'status'>): Story {
+function story(
+  partial: Partial<Story> & Pick<Story, 'id' | 'title' | 'status'>,
+): Story {
   return {
     project_id: 'p1',
     description: null,
@@ -188,8 +190,9 @@ describe('report page', () => {
     ).toBeGreaterThan(1)
 
     expect(
-      screen.getAllByRole('button', { name: /Ship the board|After regen|Edited goal/ })
-        .length,
+      screen.getAllByRole('button', {
+        name: /Ship the board|After regen|Edited goal/,
+      }).length,
     ).toBeGreaterThan(1)
     await user.click(screen.getByRole('button', { name: /Edited goal/ }))
     expect(await screen.findByText('Edited goal')).toBeInTheDocument()
@@ -199,8 +202,7 @@ describe('report page', () => {
     mockFetch((call) => {
       const path = pathOf(call.url)
       if (path === '/projects/p1') return { json: { ...project, name: '' } }
-      if (path === '/projects/p1/stories')
-        return { json: [stories[1]] }
+      if (path === '/projects/p1/stories') return { json: [stories[1]] }
       if (path.endsWith('/members')) return { json: [] }
       if (path.endsWith('/reports') && call.method === 'GET')
         return { json: [] }
@@ -257,7 +259,8 @@ describe('report page', () => {
         return { json: [{ id: 'ann', name: 'Ann' }] }
       if (path.endsWith('/report/draft')) {
         if (mode === 'error') return { status: 500, json: { detail: 'down' } }
-        if (mode === 'empty') return { status: 422, json: { detail: 'nothing' } }
+        if (mode === 'empty')
+          return { status: 422, json: { detail: 'nothing' } }
         return {
           json: {
             id: 'r2',
