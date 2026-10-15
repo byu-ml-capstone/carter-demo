@@ -1,9 +1,34 @@
 import type { AuthResult, SprintReport, ReportFields } from './types'
 
+const LOCAL_API = 'http://127.0.0.1:8000'
+
+type ApiPage = { protocol: string; host: string } | null
+
+/** Fetch prefix for VITE_API_ORIGIN. A bare host uses the page scheme. */
+export function resolveApiOrigin(
+  raw: string | undefined | null,
+  page: ApiPage,
+): string {
+  const value = (raw ?? '').trim()
+  if (!value) return LOCAL_API
+
+  const scheme = page?.protocol === 'https:' ? 'https:' : 'http:'
+  const absolute = value.includes('://') ? value : `${scheme}//${value}`
+
+  try {
+    const url = new URL(absolute)
+    if (page && url.host === page.host) return ''
+    return absolute.replace(/\/+$/, '')
+  } catch {
+    return page ? '' : LOCAL_API
+  }
+}
+
 /** API origin. Host port 8000 comes from docker-compose.override.yml. */
-export const API_ORIGIN = (
-  import.meta.env.VITE_API_ORIGIN || 'http://127.0.0.1:8000'
-).replace(/\/$/, '')
+export const API_ORIGIN = resolveApiOrigin(
+  import.meta.env.VITE_API_ORIGIN,
+  typeof window === 'undefined' ? null : window.location,
+)
 
 let token: string | null = null
 let onUnauthorized: (() => void) | null = null

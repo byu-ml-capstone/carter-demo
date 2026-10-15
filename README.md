@@ -125,10 +125,10 @@ GitHub Actions runs that job on pushes and pull requests to `main` and `staging`
 
 1. Fork or copy this directory into your team's GitHub repo.
 2. Follow **`student-guide.md` → Part B → Setup** (in the top-level of `ml-capstone-platform`) to create the Coolify Applications and GitHub secrets.
-3. Push to `staging` → tests run → Coolify deploys to `http://<your-repo>-staging.ml-capstone.cs.byu.edu`.
-4. Merge `staging` into `main` → the same flow deploys to `http://<your-repo>.ml-capstone.cs.byu.edu`.
+3. Push to `staging` → tests run → Coolify deploys to `https://<your-repo>-staging.ml-capstone.cs.byu.edu`.
+4. Merge `staging` into `main` → the same flow deploys to `https://<your-repo>.ml-capstone.cs.byu.edu`.
 
-Student apps are served over `http://`. The CS wildcard certificate covers one level under `cs.byu.edu`, and these hostnames are two levels deep, so an `https://` request gets `503 no available server`. Traffic is encrypted at the VPN layer. The hostname comes from the repository name.
+The public site is `https://`. `VITE_API_ORIGIN` must include the scheme, for example `https://carter-demo.ml-capstone.cs.byu.edu`. The hostname comes from the repository name.
 
 ## Provisioning with Terraform
 
@@ -164,7 +164,7 @@ terraform apply
 
 ### The one manual step
 
-Coolify's API will not accept per-service domains on a Docker Compose application. For each of the two Applications: **Access → gear icon on "1 configured domain"** (or the **Domains** tab) → under service **`frontend`**, set `http://<your-repo>-staging.ml-capstone.cs.byu.edu` (or the prod equivalent) → **Save**. Delete the auto-generated `sslip.io` placeholder and the `www.` variant. The frontend nginx config proxies API routes to `backend`; you do not need a separate public domain for the API unless you want one.
+Coolify's API will not accept per-service domains on a Docker Compose application. For each of the two Applications: **Access → gear icon on "1 configured domain"** (or the **Domains** tab) → under service **`frontend`**, set `https://carter-demo.ml-capstone.cs.byu.edu` (or the prod equivalent) → **Save**. Delete the auto-generated `sslip.io` placeholder and the `www.` variant. The frontend nginx config proxies API routes to `backend`; you do not need a separate public domain for the API unless you want one.
 
 Do this before the first deploy. Traefik bakes routing labels into a container when it starts, so a domain added afterwards returns `404 page not found` until you hit **Redeploy**.
 
