@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { ApiError, login, register } from './api'
 import { useSession } from './session'
+import { CREDENTIALS_WRONG, EMAIL_TAKEN } from './types'
 import { safeNext } from './ui'
 
 function LogoSVG({ className }: { className?: string }) {
@@ -63,10 +64,10 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
       navigate(mode === 'login' ? next : '/', { replace: true })
     } catch (caught) {
       if (caught instanceof ApiError && caught.status === 401) {
-        setError('Email or password is wrong.')
+        setError(CREDENTIALS_WRONG)
         setPassword('')
       } else if (caught instanceof ApiError && caught.status === 409) {
-        setError('An account with that email already exists.')
+        setError(EMAIL_TAKEN)
       } else if (caught instanceof ApiError && caught.status === 400) {
         setError(caught.detail)
       } else if (caught instanceof ApiError && caught.status === 0) {

@@ -1,40 +1,42 @@
 """Domain rules. No SQL and no HTTP."""
 
-STATUSES = ("Backlog", "Selected for Sprint", "In Progress", "Done")
-PRIORITIES = ("Low", "Medium", "High")
-TYPES = ("Feature", "Bug", "Chore")
-SPRINT_STATUSES = ("Planned", "Active", "Closed")
-INITIAL_STORY_STATUS = "Backlog"
-PRIORITY_RANK = (("High", 0), ("Medium", 1), ("Low", 2))
-REPORT_KEYS = (
-    "sprint_goal",
-    "completed_work",
-    "next_sprint_goals",
-    "blockers",
-    "faculty_notes",
+import json
+from pathlib import Path
+
+_VOCAB = json.loads(
+    (Path(__file__).resolve().parents[1] / "frontend" / "src" / "vocabulary.json").read_text()
 )
 
-ALREADY_MOVED = "This story was already moved."
-NOTHING_COMPLETED = "No stories were completed this sprint"
-NO_FACULTY_NOTES = "No faculty notes recorded"
-NO_BLOCKERS = "No blockers were recorded for this sprint"
-SIGN_IN_REQUIRED = "Sign in required."
+STATUSES = tuple(_VOCAB["statuses"])
+PRIORITIES = tuple(_VOCAB["priorities"])
+TYPES = tuple(_VOCAB["storyTypes"])
+SPRINT_STATUSES = tuple(_VOCAB["sprintStatuses"])
+INITIAL_STORY_STATUS = STATUSES[0]
+PRIORITY_RANK = tuple((name, rank) for name, rank in _VOCAB["priorityRank"])
+REPORT_KEYS = tuple(_VOCAB["reportKeys"])
+
+ALREADY_MOVED = _VOCAB["alreadyMoved"]
+NOTHING_COMPLETED = _VOCAB["nothingCompleted"]
+NO_FACULTY_NOTES = _VOCAB["noFacultyNotes"]
+NO_BLOCKERS = _VOCAB["noBlockers"]
+SIGN_IN_REQUIRED = _VOCAB["signInRequired"]
+CREDENTIALS_WRONG = _VOCAB["credentialsWrong"]
+EMAIL_TAKEN = _VOCAB["emailTaken"]
+EMAIL_INVALID = _VOCAB["emailInvalid"]
+PROJECT_NAME_TAKEN = _VOCAB["projectNameTaken"]
+SPRINT_ALREADY_OPEN = _VOCAB["sprintAlreadyOpen"]
+MEMBER_NAME_TAKEN = _VOCAB["memberNameTaken"]
+EMPTY_SPRINT = _VOCAB["emptySprint"]
+EMPTY_PROJECT = _VOCAB["emptyProject"]
 SPRINT_NOT_CLOSED = "Sprint is not closed."
 SPRINT_NOT_PLANNED = "Sprint is not planned."
 SPRINT_NOT_ACTIVE = "Sprint is not active."
 ANOTHER_SPRINT_ACTIVE = "Another sprint is already active."
-SPRINT_ALREADY_OPEN = "A Planned or Active sprint already exists for this project."
-EMPTY_SPRINT = "This sprint had no stories, so there's nothing to report"
-EMPTY_PROJECT = "This project has no stories, so there's nothing to report"
 DRAFT_FAILED = "Sprint report draft failed."
 DRAFTER_MISSING = "Sprint report drafter is not configured."
-EMAIL_INVALID = "email must contain @"
 PASSWORD_INVALID = "password must be at least 8 characters"
-EMAIL_TAKEN = "An account with that email already exists."
 PROJECT_NAME_INVALID = "name is required and must be 1–100 characters"
-PROJECT_NAME_TAKEN = "A project with that name already exists."
 MEMBER_NAME_REQUIRED = "name is required"
-MEMBER_NAME_TAKEN = "A team member with that name already exists."
 TITLE_REQUIRED = "title is required"
 COMMENT_BODY_REQUIRED = "Comment body is required."
 SORT_INVALID = "sort must be priority or created_at"
@@ -233,6 +235,32 @@ def story_fields(story, changes: dict) -> dict:
 
 def any_story_completed(stories: list) -> bool:
     return any(story.get("status_at_close") == "Done" for story in stories)
+
+
+def report_context(
+    *,
+    goal,
+    faculty_notes,
+    stories: list,
+    sprint_id: str | None = None,
+    project_id: str | None = None,
+    status: str | None = None,
+) -> dict:
+    """Fields the drafter reads. Sprint drafts include status; board drafts do not."""
+    body = {
+        "goal": goal,
+        "sprint_goal": goal,
+        "faculty_notes": faculty_notes,
+        "story_count": len(stories),
+        "any_completed": any_story_completed(stories),
+        "stories": stories,
+    }
+    if project_id is not None:
+        body["project_id"] = project_id
+    if sprint_id is not None:
+        body["sprint_id"] = sprint_id
+        body["status"] = status
+    return body
 
 
 def require_sprint_status(actual: str, expected: str, message: str) -> None:

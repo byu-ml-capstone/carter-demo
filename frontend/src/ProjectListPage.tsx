@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { api, ApiError } from './api'
-import type { Project } from './types'
+import { PROJECT_NAME_TAKEN, type Project } from './types'
 import { formatDate } from './ui'
 
 function StatCard({
@@ -161,7 +161,7 @@ export function ProjectListPage() {
     } catch (caught) {
       setProjects((current) => current.filter((row) => row.id !== pendingId))
       if (caught instanceof ApiError && caught.status === 409) {
-        setError('A project with that name already exists.')
+        setError(PROJECT_NAME_TAKEN)
       } else if (caught instanceof ApiError && caught.status === 400) {
         setError(caught.detail || 'Name is required.')
       } else if (!(caught instanceof ApiError) || caught.status !== 401) {

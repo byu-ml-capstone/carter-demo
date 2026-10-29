@@ -4,10 +4,10 @@ These tests call a fake model. They do not open a network connection.
 """
 
 from sprint_report import SprintReportError, build_model_payload, draft_report
+from domain import NO_FACULTY_NOTES
 from sprint_report.draft import (
     NO_BLOCKERS,
     NO_COMPLETED,
-    NO_FACULTY_NOTES,
     NO_SPRINT_GOAL,
     NO_UNFINISHED,
 )

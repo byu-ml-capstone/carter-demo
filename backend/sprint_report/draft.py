@@ -15,12 +15,11 @@ from domain import (
     EMPTY_SPRINT,
     NOTHING_COMPLETED as NO_COMPLETED,
     NO_BLOCKERS,
-    NO_FACULTY_NOTES,
     REPORT_KEYS as REPORT_FIELDS,
     SPRINT_NOT_CLOSED,
+    AppError,
     faculty_notes_for_report,
 )
-from sprint_report.course_ai import complete_report
 
 NO_SPRINT_GOAL = "No sprint goal was recorded."
 NO_UNFINISHED = "No unfinished stories to carry forward."
@@ -30,11 +29,16 @@ STORY_FIELDS = ("id", "title", "description", "priority", "type", "status_at_clo
 Model = Callable[[str, dict], object]
 
 
-class SprintReportError(Exception):
+class SprintReportError(AppError):
     def __init__(self, status_code: int, detail: str):
+        super().__init__(status_code, detail)
         self.status_code = status_code
-        self.detail = detail
-        super().__init__(detail)
+
+
+def _course_model(system_prompt: str, payload: dict):
+    from sprint_report.course_ai import complete_report
+
+    return complete_report(system_prompt, payload)
 
 
 def draft_report(snapshot: dict, model: Model | None = None) -> dict:
@@ -44,8 +48,7 @@ def draft_report(snapshot: dict, model: Model | None = None) -> dict:
     or dict`. Tests pass a fake. When `model` is omitted, the course client
     is used, and it does not open a connection unless a course API key is set.
     """
-    status = snapshot.get("status")
-    if status != "Closed":
+    if "status" in snapshot and snapshot.get("status") != "Closed":
         raise SprintReportError(409, SPRINT_NOT_CLOSED)
 
     stories = list(snapshot.get("stories") or [])
@@ -53,7 +56,7 @@ def draft_report(snapshot: dict, model: Model | None = None) -> dict:
         raise SprintReportError(422, EMPTY_SPRINT)
 
     payload = build_model_payload(snapshot)
-    caller = model if model is not None else complete_report
+    caller = model if model is not None else _course_model
     try:
         raw = caller(_system_prompt(), payload)
     except SprintReportError:

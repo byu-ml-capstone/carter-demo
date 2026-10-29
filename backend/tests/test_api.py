@@ -1,6 +1,7 @@
 import builtins
 import importlib
 import sqlite3
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -12,7 +13,11 @@ from db import Database, sqlite_path
 from domain import (
     NO_FACULTY_NOTES,
     NOTHING_COMPLETED,
+    PRIORITIES,
     REPORT_KEYS,
+    SPRINT_STATUSES,
+    STATUSES,
+    TYPES,
     AppError,
     final_content,
     mention_ids,
@@ -845,7 +850,7 @@ def test_project_report_drafts_from_the_board_without_closing_a_sprint(client):
     report_id = drafted.json()["id"]
     assert body["completed_work"] == "Publish board"
     assert body["faculty_notes"] == "Watch the demo"
-    assert calls[0]["status"] == "Closed"
+    assert "status" not in calls[0]
     assert calls[0]["any_completed"] is True
     assert calls[0]["stories"][0]["status_at_close"] == "Done"
     assert calls[0]["sprint_goal"] is None
@@ -995,3 +1000,9 @@ def test_missing_project_report_and_draft_failures(client, monkeypatch):
     unconfigured = client.post(f"/projects/{pid}/report/draft", json={}, headers=headers)
     assert unconfigured.status_code == 503
     assert unconfigured.json()["detail"] == "Sprint report drafter is not configured."
+
+
+def test_schema_checks_use_the_shared_vocabulary():
+    sql = (Path(__file__).resolve().parents[1] / "migrations" / "001_workspace.sql").read_text()
+    for value in (*STATUSES, *PRIORITIES, *TYPES, *SPRINT_STATUSES):
+        assert f"'{value}'" in sql

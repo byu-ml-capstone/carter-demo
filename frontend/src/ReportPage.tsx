@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useBlocker, useParams } from 'react-router-dom'
 import { api, ApiError, normalizeReport } from './api'
+import { authorKey } from './authorStorage'
 import {
-  authorKey,
   consumeSuppressLeave,
   setReportDirty,
   suppressLeaveGuard,

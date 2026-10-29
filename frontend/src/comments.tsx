@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { api, ApiError } from './api'
-import { authorKey } from './reportGuard'
+import { authorKey } from './authorStorage'
 import { toast } from './toast'
 import type { Comment, Member } from './types'
 import { formatWhen } from './ui'

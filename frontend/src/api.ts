@@ -1,4 +1,10 @@
-import type { AuthResult, SprintReport, ReportFields } from './types'
+import {
+  REPORT_KEYS,
+  SIGN_IN_REQUIRED,
+  type AuthResult,
+  type ReportFields,
+  type SprintReport,
+} from './types'
 
 const LOCAL_API = 'http://127.0.0.1:8000'
 
@@ -116,7 +122,7 @@ export async function api<T>(path: string, options: Options = {}): Promise<T> {
       authLock = true
       onUnauthorized?.()
     }
-    throw new ApiError(401, readDetail(parsed, 'Sign in required.'))
+    throw new ApiError(401, readDetail(parsed, SIGN_IN_REQUIRED))
   }
 
   if (!response.ok) {
@@ -152,15 +158,12 @@ export function logout() {
 function asFields(value: unknown): ReportFields | null {
   if (!value || typeof value !== 'object') return null
   const record = value as Record<string, unknown>
-  const text = (key: string) =>
-    typeof record[key] === 'string' ? record[key] : ''
-  return {
-    sprint_goal: text('sprint_goal'),
-    completed_work: text('completed_work'),
-    next_sprint_goals: text('next_sprint_goals'),
-    blockers: text('blockers'),
-    faculty_notes: text('faculty_notes'),
+  const fields = {} as ReportFields
+  for (const key of REPORT_KEYS) {
+    const item = record[key]
+    fields[key] = typeof item === 'string' ? item : ''
   }
+  return fields
 }
 
 export function normalizeReport(raw: SprintReport | null): SprintReport | null {

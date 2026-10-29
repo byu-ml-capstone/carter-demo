@@ -9,6 +9,7 @@ from auth import hash_password, new_token, verify_password
 from db import Database, now
 from domain import (
     ANOTHER_SPRINT_ACTIVE,
+    CREDENTIALS_WRONG,
     EMAIL_TAKEN,
     EMPTY_PROJECT,
     EMPTY_SPRINT,
@@ -20,8 +21,8 @@ from domain import (
     SPRINT_NOT_CLOSED,
     SPRINT_NOT_PLANNED,
     AppError,
-    any_story_completed,
     mention_ids,
+    report_context,
     require_report_stories,
     require_sprint_status,
     story_fields,
@@ -122,7 +123,7 @@ class WorkspaceDAO:
         with self.db.connect() as conn:
             row = conn.execute("SELECT * FROM users WHERE email = ?", (cleaned,)).fetchone()
             if row is None or not verify_password(password, row["password_hash"]):
-                raise AppError(401, "Email or password is wrong.")
+                raise AppError(401, CREDENTIALS_WRONG)
             raw, token_hash = new_token()
             created = now()
             expires = (datetime.now(UTC) + timedelta(days=SESSION_DAYS)).isoformat(
@@ -507,26 +508,24 @@ class WorkspaceDAO:
             require_sprint_status(row["status"], "Closed", SPRINT_NOT_CLOSED)
             stories = self._snapshot(conn, sprint_id)
         require_report_stories(stories, EMPTY_SPRINT)
-        return {
-            "sprint_id": row["id"],
-            "status": row["status"],
-            "goal": row["goal"],
-            "sprint_goal": row["goal"],
-            "faculty_notes": row["faculty_notes"],
-            "story_count": len(stories),
-            "any_completed": any_story_completed(stories),
-            "stories": [
-                {
-                    "id": story["story_id"],
-                    "title": story["title"],
-                    "description": story["description"],
-                    "priority": story["priority"],
-                    "type": story["type"],
-                    "status_at_close": story["status_at_close"],
-                }
-                for story in stories
-            ],
-        }
+        drafted = [
+            {
+                "id": story["story_id"],
+                "title": story["title"],
+                "description": story["description"],
+                "priority": story["priority"],
+                "type": story["type"],
+                "status_at_close": story["status_at_close"],
+            }
+            for story in stories
+        ]
+        return report_context(
+            goal=row["goal"],
+            faculty_notes=row["faculty_notes"],
+            stories=drafted,
+            sprint_id=row["id"],
+            status=row["status"],
+        )
 
     def save_draft(self, sprint_id: str, draft: dict, generated_at: str) -> None:
         payload = json.dumps(draft)
@@ -576,8 +575,7 @@ class WorkspaceDAO:
         return _report_public(updated)
 
     def project_report_snapshot(self, project_id: str, faculty_notes: str | None) -> dict:
-        """Point-in-time board snapshot. Status is Closed so the drafter can run
-        without a sprint having been closed."""
+        """Point-in-time board snapshot. Omits sprint status so a live board is not a closed sprint."""
         with self.db.connect() as conn:
             self._require_project(conn, project_id)
             rows = conn.execute(
@@ -607,17 +605,12 @@ class WorkspaceDAO:
             }
             for row in rows
         ]
-        goal = None if active is None else active["goal"]
-        return {
-            "project_id": project_id,
-            "status": "Closed",
-            "goal": goal,
-            "sprint_goal": goal,
-            "faculty_notes": faculty_notes,
-            "story_count": len(stories),
-            "any_completed": any_story_completed(stories),
-            "stories": stories,
-        }
+        return report_context(
+            goal=None if active is None else active["goal"],
+            faculty_notes=faculty_notes,
+            stories=stories,
+            project_id=project_id,
+        )
 
     def save_project_draft(
         self, project_id: str, draft: dict, generated_at: str, stories: list

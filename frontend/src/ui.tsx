@@ -1,6 +1,9 @@
-import type { Priority, StoryType } from './types'
-
-const PRIORITY_RANK: Record<Priority, number> = { High: 0, Medium: 1, Low: 2 }
+import {
+  PRIORITY_RANK,
+  type Priority,
+  type SprintStatus,
+  type StoryType,
+} from './types'
 
 export function priorityRank(priority: Priority) {
   return PRIORITY_RANK[priority]
@@ -28,10 +31,7 @@ export function formatWhen(iso: string) {
   }).format(date)
 }
 
-export function sprintLabel(
-  status: 'Planned' | 'Active' | 'Closed',
-  goal: string | null,
-) {
+export function sprintLabel(status: SprintStatus, goal: string | null) {
   const text = goal?.trim()
   if (text) return text
   if (status === 'Planned') return 'Planned sprint'
