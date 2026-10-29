@@ -12,17 +12,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, ConfigDict
 
-from auth import hash_token
 from dao import WorkspaceDAO
-from db import now
-from domain import (
-    NOTHING_COMPLETED,
-    REPORT_KEYS,
-    SIGN_IN_REQUIRED,
-    AppError,
-    faculty_notes_for_report,
-    normalize_faculty_notes,
-)
+from domain import AppError
+from service import WorkspaceService
 
 APP_VERSION = "0.1.2"
 
@@ -36,6 +28,7 @@ if not log.handlers:
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///./data/workspace.db")
 dao = WorkspaceDAO(DATABASE_URL)
+service = WorkspaceService(dao)
 
 # Tests assign a callable. None means import sprint_report.draft_report.
 report_drafter = None
@@ -107,15 +100,7 @@ def validation_error(_request: Request, exc: RequestValidationError):
 
 
 def require_user(authorization: str | None = Header(default=None)) -> dict:
-    if authorization is None or not authorization.startswith("Bearer "):
-        raise AppError(401, SIGN_IN_REQUIRED)
-    raw = authorization.removeprefix("Bearer ").strip()
-    if not raw:
-        raise AppError(401, SIGN_IN_REQUIRED)
-    user = dao.user_for_token(hash_token(raw))
-    if user is None:
-        raise AppError(401, SIGN_IN_REQUIRED)
-    return user
+    return service.user_from_header(authorization)
 
 
 class RegisterIn(BaseModel):
@@ -170,14 +155,6 @@ class ReportIn(BaseModel):
     reviewed_by: str | None = None
 
 
-def _blank_to_none(value: str | None) -> str | None:
-    if value is None:
-        return None
-    if value.strip() == "":
-        return None
-    return value
-
-
 @app.get("/health")
 def health():
     return {"ok": True, "version": APP_VERSION}
@@ -190,12 +167,12 @@ def version():
 
 @app.post("/auth/register", status_code=201)
 def register(body: RegisterIn):
-    return dao.register(body.email, body.password)
+    return service.register(body.email, body.password)
 
 
 @app.post("/auth/login")
 def login(body: RegisterIn):
-    return dao.login(body.email, body.password)
+    return service.login(body.email, body.password)
 
 
 @app.post("/auth/logout", status_code=204)
@@ -203,8 +180,7 @@ def logout(
     authorization: str | None = Header(default=None),
     _user: dict = Depends(require_user),
 ):
-    raw = (authorization or "").removeprefix("Bearer ").strip()
-    dao.logout(hash_token(raw))
+    service.logout(authorization)
     return Response(status_code=204)
 
 
@@ -215,17 +191,17 @@ def me(user: dict = Depends(require_user)):
 
 @app.post("/projects", status_code=201)
 def create_project(body: ProjectIn, _user: dict = Depends(require_user)):
-    return dao.create_project(body.name, body.description)
+    return service.create_project(body.name, body.description)
 
 
 @app.get("/projects")
 def list_projects(_user: dict = Depends(require_user)):
-    return dao.list_projects()
+    return service.list_projects()
 
 
 @app.get("/projects/{project_id}")
 def get_project(project_id: str, _user: dict = Depends(require_user)):
-    return dao.get_project(project_id)
+    return service.get_project(project_id)
 
 
 @app.get("/projects/{project_id}/stories")
@@ -237,37 +213,37 @@ def list_stories(
     hide_resolved: bool = False,
     _user: dict = Depends(require_user),
 ):
-    return dao.list_stories(project_id, status, sprint_id, sort, hide_resolved)
+    return service.list_stories(project_id, status, sprint_id, sort, hide_resolved)
 
 
 @app.post("/projects/{project_id}/stories", status_code=201)
 def create_story(project_id: str, body: StoryIn, _user: dict = Depends(require_user)):
-    return dao.create_story(project_id, body.title, body.description, body.priority, body.type)
+    return service.create_story(project_id, body.title, body.description, body.priority, body.type)
 
 
 @app.patch("/stories/{story_id}")
 def patch_story(story_id: str, body: StoryPatch, _user: dict = Depends(require_user)):
-    return dao.patch_story(story_id, body.model_dump(exclude_unset=True))
+    return service.patch_story(story_id, body.model_dump(exclude_unset=True))
 
 
 @app.post("/projects/{project_id}/sprints", status_code=201)
 def create_sprint(project_id: str, body: SprintIn, _user: dict = Depends(require_user)):
-    return dao.create_sprint(project_id, _blank_to_none(body.goal))
+    return service.create_sprint(project_id, body.goal)
 
 
 @app.get("/projects/{project_id}/sprints")
 def list_sprints(project_id: str, _user: dict = Depends(require_user)):
-    return dao.list_sprints(project_id)
+    return service.list_sprints(project_id)
 
 
 @app.get("/sprints/{sprint_id}")
 def get_sprint(sprint_id: str, _user: dict = Depends(require_user)):
-    return dao.get_sprint(sprint_id)
+    return service.get_sprint(sprint_id)
 
 
 @app.post("/sprints/{sprint_id}/activate")
 def activate_sprint(sprint_id: str, _user: dict = Depends(require_user)):
-    return dao.activate_sprint(sprint_id)
+    return service.activate_sprint(sprint_id)
 
 
 @app.post("/sprints/{sprint_id}/close")
@@ -276,25 +252,8 @@ def close_sprint(
     body: CloseIn | None = None,
     _user: dict = Depends(require_user),
 ):
-    notes = None if body is None else normalize_faculty_notes(body.faculty_notes)
-    return dao.close_sprint(sprint_id, notes)
-
-
-def _coerce_draft(raw, snapshot: dict) -> dict:
-    if not isinstance(raw, dict):
-        raise AppError(502, "Sprint report draft failed.")
-    content = {}
-    for key in REPORT_KEYS:
-        if key == "faculty_notes":
-            continue
-        value = raw.get(key)
-        if not isinstance(value, str):
-            raise AppError(502, "Sprint report draft failed.")
-        content[key] = value
-    if not snapshot["any_completed"]:
-        content["completed_work"] = NOTHING_COMPLETED
-    content["faculty_notes"] = faculty_notes_for_report(snapshot["faculty_notes"])
-    return content
+    raw = None if body is None else body.faculty_notes
+    return service.close_sprint(sprint_id, raw)
 
 
 @app.post("/projects/{project_id}/report/draft")
@@ -303,35 +262,18 @@ def draft_project_report(
     body: CloseIn | None = None,
     _user: dict = Depends(require_user),
 ):
-    notes = None if body is None else normalize_faculty_notes(body.faculty_notes)
-    snapshot = dao.project_report_snapshot(project_id, notes)
-    drafter = current_drafter()
-    if drafter is None:
-        raise AppError(503, "Sprint report drafter is not configured.")
-    try:
-        raw = drafter(snapshot)
-    except AppError:
-        raise
-    except Exception as exc:
-        status = getattr(exc, "status_code", None)
-        detail = getattr(exc, "detail", None)
-        if isinstance(status, int) and isinstance(detail, str):
-            raise AppError(status, detail) from None
-        log.warning("project report draft failed")
-        raise AppError(502, "Sprint report draft failed.") from None
-    content = _coerce_draft(raw, snapshot)
-    generated_at = now()
-    return dao.save_project_draft(project_id, content, generated_at, snapshot["stories"])
+    raw = None if body is None else body.faculty_notes
+    return service.draft_project_report(project_id, raw, current_drafter())
 
 
 @app.get("/projects/{project_id}/reports")
 def list_project_reports(project_id: str, _user: dict = Depends(require_user)):
-    return dao.list_project_reports(project_id)
+    return service.list_project_reports(project_id)
 
 
 @app.get("/projects/{project_id}/reports/{report_id}")
 def get_project_report(project_id: str, report_id: str, _user: dict = Depends(require_user)):
-    return dao.get_project_report(project_id, report_id)
+    return service.get_project_report(project_id, report_id)
 
 
 @app.put("/projects/{project_id}/reports/{report_id}")
@@ -341,83 +283,49 @@ def save_project_report(
     body: ReportIn,
     _user: dict = Depends(require_user),
 ):
-    return dao.save_project_final(
-        project_id, report_id, _final_content(body.final_content), body.reviewed_by
-    )
+    return service.save_project_report(project_id, report_id, body.final_content, body.reviewed_by)
 
 
 @app.post("/sprints/{sprint_id}/report/draft")
 def draft_sprint_report(sprint_id: str, _user: dict = Depends(require_user)):
-    snapshot = dao.report_snapshot(sprint_id)
-    drafter = current_drafter()
-    if drafter is None:
-        raise AppError(503, "Sprint report drafter is not configured.")
-    try:
-        raw = drafter(snapshot)
-    except AppError:
-        raise
-    except Exception as exc:
-        status = getattr(exc, "status_code", None)
-        detail = getattr(exc, "detail", None)
-        if isinstance(status, int) and isinstance(detail, str):
-            raise AppError(status, detail) from None
-        log.warning("sprint report draft failed")
-        raise AppError(502, "Sprint report draft failed.") from None
-    content = _coerce_draft(raw, snapshot)
-    generated_at = now()
-    dao.save_draft(sprint_id, content, generated_at)
-    return {"draft_content": content, "generated_at": generated_at}
-
-
-def _final_content(payload: dict) -> dict:
-    if not isinstance(payload, dict):
-        raise AppError(400, "final_content must be an object")
-    missing = [key for key in REPORT_KEYS if key not in payload]
-    if missing:
-        raise AppError(400, "final_content is missing required fields")
-    content = {}
-    for key in REPORT_KEYS:
-        if not isinstance(payload[key], str):
-            raise AppError(400, f"{key} must be a string")
-        content[key] = payload[key]
-    return content
+    return service.draft_sprint_report(sprint_id, current_drafter())
 
 
 @app.put("/sprints/{sprint_id}/report")
 def save_sprint_report(sprint_id: str, body: ReportIn, _user: dict = Depends(require_user)):
-    return dao.save_final(sprint_id, _final_content(body.final_content), body.reviewed_by)
+    return service.save_sprint_report(sprint_id, body.final_content, body.reviewed_by)
 
 
 @app.get("/sprints/{sprint_id}/report")
 def get_sprint_report(sprint_id: str, _user: dict = Depends(require_user)):
-    return dao.get_report(sprint_id)
+    return service.get_sprint_report(sprint_id)
 
 
 @app.post("/projects/{project_id}/members", status_code=201)
 def add_member(project_id: str, body: MemberIn, _user: dict = Depends(require_user)):
-    return dao.add_member(project_id, body.name)
+    return service.add_member(project_id, body.name)
 
 
 @app.get("/projects/{project_id}/members")
 def list_members(project_id: str, _user: dict = Depends(require_user)):
-    return dao.list_members(project_id)
+    return service.list_members(project_id)
 
 
 @app.post("/stories/{story_id}/comments", status_code=201)
 def add_story_comment(story_id: str, body: CommentIn, _user: dict = Depends(require_user)):
-    return dao.add_comment("Story", story_id, body.author_id, body.body)
+    return service.add_comment("Story", story_id, body.author_id, body.body)
 
 
 @app.get("/stories/{story_id}/comments")
 def list_story_comments(story_id: str, _user: dict = Depends(require_user)):
-    return dao.list_comments("Story", story_id)
+    return service.list_comments("Story", story_id)
 
 
 @app.post("/sprints/{sprint_id}/comments", status_code=201)
 def add_sprint_comment(sprint_id: str, body: CommentIn, _user: dict = Depends(require_user)):
-    return dao.add_comment("Sprint", sprint_id, body.author_id, body.body)
+    return service.add_comment("Sprint", sprint_id, body.author_id, body.body)
 
 
 @app.get("/sprints/{sprint_id}/comments")
 def list_sprint_comments(sprint_id: str, _user: dict = Depends(require_user)):
-    return dao.list_comments("Sprint", sprint_id)
+    return service.list_comments("Sprint", sprint_id)

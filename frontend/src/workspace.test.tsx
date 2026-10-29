@@ -31,7 +31,7 @@ const stories: Story[] = [
   story({
     id: 's-old',
     title: 'Older card',
-    priority: 'Low',
+    priority: 'High',
     type: 'Bug',
     github_branch_ref: 'feature/older',
     created_at: '2020-01-01T00:00:00.000Z',
@@ -39,7 +39,7 @@ const stories: Story[] = [
   story({
     id: 's-new',
     title: 'Newer card',
-    priority: 'High',
+    priority: 'Low',
     type: 'Feature',
     created_at: '2024-06-01T00:00:00.000Z',
   }),
@@ -132,11 +132,11 @@ describe('workspace', () => {
       document.querySelector('[data-column="Backlog"]') as HTMLElement
     const titles = () =>
       [...backlog().querySelectorAll('h3')].map((node) => node.textContent)
-    expect(titles()).toEqual(['Older card', 'Newer card'])
-    await user.click(screen.getByRole('button', { name: 'Priority' }))
     expect(titles()).toEqual(['Newer card', 'Older card'])
-    await user.click(screen.getByRole('button', { name: 'Date created' }))
+    await user.click(screen.getByRole('button', { name: 'Priority' }))
     expect(titles()).toEqual(['Older card', 'Newer card'])
+    await user.click(screen.getByRole('button', { name: 'Date created' }))
+    expect(titles()).toEqual(['Newer card', 'Older card'])
     expect(
       calls.find((call) => pathOf(call.url) === '/projects/p1')?.authorization,
     ).toBe('Bearer token-1')

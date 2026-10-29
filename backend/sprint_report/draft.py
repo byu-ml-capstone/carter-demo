@@ -11,21 +11,19 @@ import json
 from collections import Counter
 from collections.abc import Callable
 
+from domain import (
+    EMPTY_SPRINT,
+    NOTHING_COMPLETED as NO_COMPLETED,
+    NO_BLOCKERS,
+    NO_FACULTY_NOTES,
+    REPORT_KEYS as REPORT_FIELDS,
+    SPRINT_NOT_CLOSED,
+    faculty_notes_for_report,
+)
 from sprint_report.course_ai import complete_report
 
 NO_SPRINT_GOAL = "No sprint goal was recorded."
-NO_COMPLETED = "No stories were completed this sprint"
-NO_BLOCKERS = "No blockers were recorded for this sprint"
-NO_FACULTY_NOTES = "No faculty notes recorded"
 NO_UNFINISHED = "No unfinished stories to carry forward."
-
-REPORT_FIELDS = (
-    "sprint_goal",
-    "completed_work",
-    "next_sprint_goals",
-    "blockers",
-    "faculty_notes",
-)
 
 STORY_FIELDS = ("id", "title", "description", "priority", "type", "status_at_close")
 
@@ -48,13 +46,11 @@ def draft_report(snapshot: dict, model: Model | None = None) -> dict:
     """
     status = snapshot.get("status")
     if status != "Closed":
-        raise SprintReportError(409, "Sprint is not closed")
+        raise SprintReportError(409, SPRINT_NOT_CLOSED)
 
     stories = list(snapshot.get("stories") or [])
     if len(stories) == 0:
-        raise SprintReportError(
-            422, "This sprint had no stories, so there's nothing to report"
-        )
+        raise SprintReportError(422, EMPTY_SPRINT)
 
     payload = build_model_payload(snapshot)
     caller = model if model is not None else complete_report
@@ -96,13 +92,6 @@ def _goal_text(snapshot: dict) -> str | None:
     if isinstance(goal, str) and goal.strip():
         return goal
     return None
-
-
-def _faculty_notes_text(snapshot: dict) -> str:
-    notes = snapshot.get("faculty_notes")
-    if isinstance(notes, str) and notes.strip():
-        return notes
-    return NO_FACULTY_NOTES
 
 
 def _system_prompt() -> str:
@@ -157,7 +146,7 @@ def _repair(snapshot: dict, stories: list, drafted: dict) -> dict:
         "completed_work": _completed_work_field(done, not_done, drafted),
         "next_sprint_goals": _next_goals_field(done, not_done, drafted),
         "blockers": _blockers_field(stories, drafted),
-        "faculty_notes": _faculty_notes_text(snapshot),
+        "faculty_notes": faculty_notes_for_report(snapshot.get("faculty_notes")),
     }
     return {key: report[key] for key in REPORT_FIELDS}
 

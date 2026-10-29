@@ -63,7 +63,7 @@ def test_not_closed_does_not_call_the_model():
             draft_report(snapshot(status=status), model=model)
         except SprintReportError as exc:
             assert exc.status_code == 409
-            assert exc.detail == "Sprint is not closed"
+            assert exc.detail == "Sprint is not closed."
         else:
             raise AssertionError(status)
     assert model.calls == []

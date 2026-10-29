@@ -8,12 +8,24 @@ from datetime import UTC, datetime, timedelta
 from auth import hash_password, new_token, verify_password
 from db import Database, now
 from domain import (
-    ALREADY_MOVED,
-    PRIORITIES,
-    STATUSES,
-    TYPES,
+    ANOTHER_SPRINT_ACTIVE,
+    EMAIL_TAKEN,
+    EMPTY_PROJECT,
+    EMPTY_SPRINT,
+    INITIAL_STORY_STATUS,
+    MEMBER_NAME_TAKEN,
+    PROJECT_NAME_TAKEN,
+    SPRINT_ALREADY_OPEN,
+    SPRINT_NOT_ACTIVE,
+    SPRINT_NOT_CLOSED,
+    SPRINT_NOT_PLANNED,
     AppError,
+    any_story_completed,
     mention_ids,
+    require_report_stories,
+    require_sprint_status,
+    story_fields,
+    story_list_order,
 )
 
 SESSION_DAYS = 14
@@ -75,11 +87,7 @@ class WorkspaceDAO:
         return row
 
     def register(self, email: str, password: str) -> dict:
-        cleaned = email.strip().lower()
-        if "@" not in cleaned or cleaned.startswith("@") or cleaned.endswith("@"):
-            raise AppError(400, "email must contain @")
-        if len(password) < 8:
-            raise AppError(400, "password must be at least 8 characters")
+        cleaned = email
         user_id = _id()
         raw, token_hash = new_token()
         created = now()
@@ -103,14 +111,14 @@ class WorkspaceDAO:
                     (_id(), user_id, token_hash, created, expires),
                 )
         except sqlite3.IntegrityError as exc:
-            raise AppError(409, "An account with that email already exists.") from exc
+            raise AppError(409, EMAIL_TAKEN) from exc
         return {
             "token": raw,
             "user": {"id": user_id, "email": cleaned, "created_at": created},
         }
 
     def login(self, email: str, password: str) -> dict:
-        cleaned = email.strip().lower()
+        cleaned = email
         with self.db.connect() as conn:
             row = conn.execute("SELECT * FROM users WHERE email = ?", (cleaned,)).fetchone()
             if row is None or not verify_password(password, row["password_hash"]):
@@ -149,9 +157,7 @@ class WorkspaceDAO:
             conn.execute("DELETE FROM sessions WHERE token_hash = ?", (token_hash,))
 
     def create_project(self, name: str, description: str | None) -> dict:
-        cleaned = name.strip()
-        if not cleaned or len(cleaned) > 100:
-            raise AppError(400, "name is required and must be 1–100 characters")
+        cleaned = name
         project_id = _id()
         created = now()
         try:
@@ -164,7 +170,7 @@ class WorkspaceDAO:
                     (project_id, cleaned, description, created),
                 )
         except sqlite3.IntegrityError as exc:
-            raise AppError(409, "A project with that name already exists.") from exc
+            raise AppError(409, PROJECT_NAME_TAKEN) from exc
         return {
             "id": project_id,
             "name": cleaned,
@@ -211,18 +217,7 @@ class WorkspaceDAO:
         sort: str | None,
         hide_resolved: bool,
     ) -> list[dict]:
-        if sort not in (None, "priority", "created_at"):
-            raise AppError(400, "sort must be priority or created_at")
-        if status is not None and status not in STATUSES:
-            raise AppError(400, "invalid status")
-        order = {
-            None: "us.created_at ASC, us.id ASC",
-            "created_at": "us.created_at DESC, us.id ASC",
-            "priority": (
-                "CASE us.priority WHEN 'High' THEN 0 WHEN 'Medium' THEN 1 "
-                "ELSE 2 END, us.created_at ASC, us.id ASC"
-            ),
-        }[sort]
+        order = story_list_order(sort, status)
         with self.db.connect() as conn:
             self._require_project(conn, project_id)
             if sprint_id is not None:
@@ -266,13 +261,7 @@ class WorkspaceDAO:
         priority: str,
         type_: str,
     ) -> dict:
-        cleaned = title.strip()
-        if not cleaned:
-            raise AppError(400, "title is required")
-        if priority not in PRIORITIES:
-            raise AppError(400, "invalid priority")
-        if type_ not in TYPES:
-            raise AppError(400, "invalid type")
+        cleaned = title
         story_id = _id()
         created = now()
         with self.db.connect() as conn:
@@ -282,9 +271,18 @@ class WorkspaceDAO:
                 INSERT INTO user_stories (
                     id, project_id, title, description, status, priority, type,
                     github_branch_ref, created_at
-                ) VALUES (?, ?, ?, ?, 'Backlog', ?, ?, NULL, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?)
                 """,
-                (story_id, project_id, cleaned, description, priority, type_, created),
+                (
+                    story_id,
+                    project_id,
+                    cleaned,
+                    description,
+                    INITIAL_STORY_STATUS,
+                    priority,
+                    type_,
+                    created,
+                ),
             )
             row = conn.execute("SELECT * FROM user_stories WHERE id = ?", (story_id,)).fetchone()
             return self._story_dto(conn, row)
@@ -292,39 +290,9 @@ class WorkspaceDAO:
     def patch_story(self, story_id: str, changes: dict) -> dict:
         with self.db.connect() as conn:
             story = self._load_story(conn, story_id)
-            if "expected_status" in changes and changes["expected_status"] != story["status"]:
-                raise AppError(409, ALREADY_MOVED)
-            title = story["title"]
-            description = story["description"]
-            priority = story["priority"]
-            type_ = story["type"]
-            branch = story["github_branch_ref"]
-            status = story["status"]
-            if "title" in changes:
-                if not isinstance(changes["title"], str) or not changes["title"].strip():
-                    raise AppError(400, "title is required")
-                title = changes["title"].strip()
-            if "description" in changes:
-                description = changes["description"]
-                if description is not None and not isinstance(description, str):
-                    raise AppError(400, "description must be a string")
-            if "priority" in changes:
-                if changes["priority"] not in PRIORITIES:
-                    raise AppError(400, "invalid priority")
-                priority = changes["priority"]
-            if "type" in changes:
-                if changes["type"] not in TYPES:
-                    raise AppError(400, "invalid type")
-                type_ = changes["type"]
-            if "github_branch_ref" in changes:
-                branch = changes["github_branch_ref"]
-                if branch is not None and not isinstance(branch, str):
-                    raise AppError(400, "github_branch_ref must be a string")
-            if "status" in changes:
-                if changes["status"] not in STATUSES:
-                    raise AppError(400, "invalid status")
-                status = changes["status"]
-                self._apply_status_move(conn, story, status)
+            fields = story_fields(story, changes)
+            if fields["action"] in ("link", "unlink"):
+                self._apply_status_move(conn, story, fields["action"])
             conn.execute(
                 """
                 UPDATE user_stories
@@ -332,16 +300,21 @@ class WorkspaceDAO:
                     github_branch_ref = ?, status = ?
                 WHERE id = ?
                 """,
-                (title, description, priority, type_, branch, status, story_id),
+                (
+                    fields["title"],
+                    fields["description"],
+                    fields["priority"],
+                    fields["type"],
+                    fields["github_branch_ref"],
+                    fields["status"],
+                    story_id,
+                ),
             )
             row = self._load_story(conn, story_id)
             return self._story_dto(conn, row)
 
-    def _apply_status_move(self, conn, story: sqlite3.Row, new_status: str) -> None:
-        old = story["status"]
-        if new_status == old:
-            return
-        if old == "Backlog" and new_status != "Backlog":
+    def _apply_status_move(self, conn, story: sqlite3.Row, action: str) -> None:
+        if action == "link":
             active = conn.execute(
                 """
                 SELECT id FROM sprints
@@ -369,15 +342,14 @@ class WorkspaceDAO:
                     (_id(), active["id"], story["id"]),
                 )
             return
-        if new_status == "Backlog":
-            conn.execute(
-                """
+        conn.execute(
+            """
                 DELETE FROM sprint_stories
                 WHERE story_id = ?
                   AND sprint_id IN (SELECT id FROM sprints WHERE status != 'Closed')
                 """,
-                (story["id"],),
-            )
+            (story["id"],),
+        )
 
     def create_sprint(self, project_id: str, goal: str | None) -> dict:
         sprint_id = _id()
@@ -395,9 +367,7 @@ class WorkspaceDAO:
                 )
                 row = conn.execute("SELECT * FROM sprints WHERE id = ?", (sprint_id,)).fetchone()
         except sqlite3.IntegrityError as exc:
-            raise AppError(
-                409, "A Planned or Active sprint already exists for this project."
-            ) from exc
+            raise AppError(409, SPRINT_ALREADY_OPEN) from exc
         return _sprint_public(row)
 
     def list_sprints(self, project_id: str) -> list[dict]:
@@ -463,8 +433,7 @@ class WorkspaceDAO:
             row = conn.execute("SELECT * FROM sprints WHERE id = ?", (sprint_id,)).fetchone()
             if row is None:
                 raise AppError(404, "Sprint not found")
-            if row["status"] != "Planned":
-                raise AppError(409, "Sprint is not planned.")
+            require_sprint_status(row["status"], "Planned", SPRINT_NOT_PLANNED)
             other = conn.execute(
                 """
                 SELECT id FROM sprints
@@ -473,7 +442,7 @@ class WorkspaceDAO:
                 (row["project_id"], sprint_id),
             ).fetchone()
             if other is not None:
-                raise AppError(409, "Another sprint is already active.")
+                raise AppError(409, ANOTHER_SPRINT_ACTIVE)
             conn.execute("UPDATE sprints SET status = 'Active' WHERE id = ?", (sprint_id,))
             updated = conn.execute("SELECT * FROM sprints WHERE id = ?", (sprint_id,)).fetchone()
         return _sprint_public(updated)
@@ -483,8 +452,7 @@ class WorkspaceDAO:
             row = conn.execute("SELECT * FROM sprints WHERE id = ?", (sprint_id,)).fetchone()
             if row is None:
                 raise AppError(404, "Sprint not found")
-            if row["status"] != "Active":
-                raise AppError(409, "Sprint is not active.")
+            require_sprint_status(row["status"], "Active", SPRINT_NOT_ACTIVE)
             conn.execute(
                 """
                 UPDATE sprint_stories
@@ -536,11 +504,9 @@ class WorkspaceDAO:
             row = conn.execute("SELECT * FROM sprints WHERE id = ?", (sprint_id,)).fetchone()
             if row is None:
                 raise AppError(404, "Sprint not found")
-            if row["status"] != "Closed":
-                raise AppError(409, "Sprint is not closed.")
+            require_sprint_status(row["status"], "Closed", SPRINT_NOT_CLOSED)
             stories = self._snapshot(conn, sprint_id)
-        if not stories:
-            raise AppError(422, "This sprint had no stories, so there's nothing to report")
+        require_report_stories(stories, EMPTY_SPRINT)
         return {
             "sprint_id": row["id"],
             "status": row["status"],
@@ -548,7 +514,7 @@ class WorkspaceDAO:
             "sprint_goal": row["goal"],
             "faculty_notes": row["faculty_notes"],
             "story_count": len(stories),
-            "any_completed": any(story["status_at_close"] == "Done" for story in stories),
+            "any_completed": any_story_completed(stories),
             "stories": [
                 {
                     "id": story["story_id"],
@@ -629,8 +595,7 @@ class WorkspaceDAO:
                 """,
                 (project_id,),
             ).fetchone()
-        if not rows:
-            raise AppError(422, "This project has no stories, so there's nothing to report")
+        require_report_stories(rows, EMPTY_PROJECT)
         stories = [
             {
                 "id": row["id"],
@@ -650,7 +615,7 @@ class WorkspaceDAO:
             "sprint_goal": goal,
             "faculty_notes": faculty_notes,
             "story_count": len(stories),
-            "any_completed": any(story["status_at_close"] == "Done" for story in stories),
+            "any_completed": any_story_completed(stories),
             "stories": stories,
         }
 
@@ -739,9 +704,7 @@ class WorkspaceDAO:
         return _report_public(row)
 
     def add_member(self, project_id: str, name: str) -> dict:
-        cleaned = name.strip()
-        if not cleaned:
-            raise AppError(400, "name is required")
+        cleaned = name
         member_id = _id()
         created = now()
         try:
@@ -755,7 +718,7 @@ class WorkspaceDAO:
                     (member_id, project_id, cleaned, created),
                 )
         except sqlite3.IntegrityError as exc:
-            raise AppError(409, "A team member with that name already exists.") from exc
+            raise AppError(409, MEMBER_NAME_TAKEN) from exc
         return {"id": member_id, "name": cleaned}
 
     def list_members(self, project_id: str) -> list[dict]:
@@ -772,8 +735,6 @@ class WorkspaceDAO:
         return [{"id": row["id"], "name": row["name"]} for row in rows]
 
     def add_comment(self, parent_type: str, parent_id: str, author_id: str, body: str) -> dict:
-        if not isinstance(body, str) or body.strip() == "":
-            raise AppError(400, "Comment body is required.")
         with self.db.connect() as conn:
             project_id = self._parent_project(conn, parent_type, parent_id)
             author = conn.execute(

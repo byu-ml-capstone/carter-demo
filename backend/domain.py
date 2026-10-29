@@ -1,8 +1,11 @@
-"""Domain constants and mention matching. No SQL."""
+"""Domain rules. No SQL and no HTTP."""
 
 STATUSES = ("Backlog", "Selected for Sprint", "In Progress", "Done")
 PRIORITIES = ("Low", "Medium", "High")
 TYPES = ("Feature", "Bug", "Chore")
+SPRINT_STATUSES = ("Planned", "Active", "Closed")
+INITIAL_STORY_STATUS = "Backlog"
+PRIORITY_RANK = (("High", 0), ("Medium", 1), ("Low", 2))
 REPORT_KEYS = (
     "sprint_goal",
     "completed_work",
@@ -11,11 +14,36 @@ REPORT_KEYS = (
     "faculty_notes",
 )
 
-NO_ACTIVE = "No active sprint — create or activate one before adding stories."
 ALREADY_MOVED = "This story was already moved."
 NOTHING_COMPLETED = "No stories were completed this sprint"
 NO_FACULTY_NOTES = "No faculty notes recorded"
+NO_BLOCKERS = "No blockers were recorded for this sprint"
 SIGN_IN_REQUIRED = "Sign in required."
+SPRINT_NOT_CLOSED = "Sprint is not closed."
+SPRINT_NOT_PLANNED = "Sprint is not planned."
+SPRINT_NOT_ACTIVE = "Sprint is not active."
+ANOTHER_SPRINT_ACTIVE = "Another sprint is already active."
+SPRINT_ALREADY_OPEN = "A Planned or Active sprint already exists for this project."
+EMPTY_SPRINT = "This sprint had no stories, so there's nothing to report"
+EMPTY_PROJECT = "This project has no stories, so there's nothing to report"
+DRAFT_FAILED = "Sprint report draft failed."
+DRAFTER_MISSING = "Sprint report drafter is not configured."
+EMAIL_INVALID = "email must contain @"
+PASSWORD_INVALID = "password must be at least 8 characters"
+EMAIL_TAKEN = "An account with that email already exists."
+PROJECT_NAME_INVALID = "name is required and must be 1–100 characters"
+PROJECT_NAME_TAKEN = "A project with that name already exists."
+MEMBER_NAME_REQUIRED = "name is required"
+MEMBER_NAME_TAKEN = "A team member with that name already exists."
+TITLE_REQUIRED = "title is required"
+COMMENT_BODY_REQUIRED = "Comment body is required."
+SORT_INVALID = "sort must be priority or created_at"
+STATUS_INVALID = "invalid status"
+PRIORITY_INVALID = "invalid priority"
+TYPE_INVALID = "invalid type"
+FINAL_CONTENT_OBJECT = "final_content must be an object"
+FINAL_CONTENT_MISSING = "final_content is missing required fields"
+FINAL_CONTENT_EMPTY = "final_content is empty"
 
 
 class AppError(Exception):
@@ -59,8 +87,8 @@ def mention_ids(body: str, members: list[dict]) -> list[str]:
     return found
 
 
-def faculty_notes_for_report(stored: str | None) -> str:
-    if stored is not None and stored.strip():
+def faculty_notes_for_report(stored) -> str:
+    if isinstance(stored, str) and stored.strip():
         return stored
     return NO_FACULTY_NOTES
 
@@ -73,3 +101,183 @@ def normalize_faculty_notes(value) -> str | None:
     if value.strip() == "":
         return None
     return value
+
+
+def canonical_email(email: str) -> str:
+    return email.strip().lower()
+
+
+def normalize_email(email: str) -> str:
+    cleaned = canonical_email(email)
+    if "@" not in cleaned or cleaned.startswith("@") or cleaned.endswith("@"):
+        raise AppError(400, EMAIL_INVALID)
+    return cleaned
+
+
+def validate_password(password: str) -> None:
+    if len(password) < 8:
+        raise AppError(400, PASSWORD_INVALID)
+
+
+def normalize_project_name(name: str) -> str:
+    cleaned = name.strip()
+    if not cleaned or len(cleaned) > 100:
+        raise AppError(400, PROJECT_NAME_INVALID)
+    return cleaned
+
+
+def normalize_member_name(name: str) -> str:
+    cleaned = name.strip()
+    if not cleaned:
+        raise AppError(400, MEMBER_NAME_REQUIRED)
+    return cleaned
+
+
+def require_comment_body(body) -> str:
+    if not isinstance(body, str) or body.strip() == "":
+        raise AppError(400, COMMENT_BODY_REQUIRED)
+    return body
+
+
+def blank_to_none(value: str | None) -> str | None:
+    if value is None:
+        return None
+    if value.strip() == "":
+        return None
+    return value
+
+
+def _require_choice(value, allowed: tuple, message: str) -> None:
+    if value not in allowed:
+        raise AppError(400, message)
+
+
+def normalize_new_story(title: str, priority: str, type_: str) -> str:
+    cleaned = title.strip()
+    if not cleaned:
+        raise AppError(400, TITLE_REQUIRED)
+    _require_choice(priority, PRIORITIES, PRIORITY_INVALID)
+    _require_choice(type_, TYPES, TYPE_INVALID)
+    return cleaned
+
+
+def story_list_order(sort: str | None, status: str | None) -> str:
+    if sort not in (None, "priority", "created_at"):
+        raise AppError(400, SORT_INVALID)
+    if status is not None and status not in STATUSES:
+        raise AppError(400, STATUS_INVALID)
+    if sort == "created_at":
+        return "us.created_at DESC, us.id ASC"
+    if sort == "priority":
+        whens = " ".join(f"WHEN '{name}' THEN {rank}" for name, rank in PRIORITY_RANK)
+        fallback = PRIORITY_RANK[-1][1]
+        return f"CASE us.priority {whens} ELSE {fallback} END, us.created_at ASC, us.id ASC"
+    return "us.created_at ASC, us.id ASC"
+
+
+def sprint_membership(old: str, new: str) -> str:
+    """How an open sprint link changes when a story's status changes.
+
+    A status change does not require an Active sprint. ``link`` attaches the
+    story only when one exists. ``same`` and ``keep`` do not touch links.
+    """
+    if new == old:
+        return "same"
+    if old == "Backlog" and new != "Backlog":
+        return "link"
+    if new == "Backlog":
+        return "unlink"
+    return "keep"
+
+
+def story_fields(story, changes: dict) -> dict:
+    if "expected_status" in changes and changes["expected_status"] != story["status"]:
+        raise AppError(409, ALREADY_MOVED)
+    title = story["title"]
+    description = story["description"]
+    priority = story["priority"]
+    type_ = story["type"]
+    branch = story["github_branch_ref"]
+    status = story["status"]
+    if "title" in changes:
+        if not isinstance(changes["title"], str) or not changes["title"].strip():
+            raise AppError(400, TITLE_REQUIRED)
+        title = changes["title"].strip()
+    if "description" in changes:
+        description = changes["description"]
+        if description is not None and not isinstance(description, str):
+            raise AppError(400, "description must be a string")
+    if "priority" in changes:
+        _require_choice(changes["priority"], PRIORITIES, PRIORITY_INVALID)
+        priority = changes["priority"]
+    if "type" in changes:
+        _require_choice(changes["type"], TYPES, TYPE_INVALID)
+        type_ = changes["type"]
+    if "github_branch_ref" in changes:
+        branch = changes["github_branch_ref"]
+        if branch is not None and not isinstance(branch, str):
+            raise AppError(400, "github_branch_ref must be a string")
+    if "status" in changes:
+        _require_choice(changes["status"], STATUSES, STATUS_INVALID)
+        status = changes["status"]
+    return {
+        "title": title,
+        "description": description,
+        "priority": priority,
+        "type": type_,
+        "github_branch_ref": branch,
+        "status": status,
+        "action": sprint_membership(story["status"], status),
+    }
+
+
+def any_story_completed(stories: list) -> bool:
+    return any(story.get("status_at_close") == "Done" for story in stories)
+
+
+def require_sprint_status(actual: str, expected: str, message: str) -> None:
+    if actual != expected:
+        raise AppError(409, message)
+
+
+def require_report_stories(stories: list, message: str) -> None:
+    if not stories:
+        raise AppError(422, message)
+
+
+def apply_snapshot_facts(content: dict, snapshot: dict) -> dict:
+    updated = dict(content)
+    if not snapshot.get("any_completed"):
+        updated["completed_work"] = NOTHING_COMPLETED
+    updated["faculty_notes"] = faculty_notes_for_report(snapshot.get("faculty_notes"))
+    return updated
+
+
+def coerce_draft(raw, snapshot: dict) -> dict:
+    if not isinstance(raw, dict):
+        raise AppError(502, DRAFT_FAILED)
+    content = {}
+    for key in REPORT_KEYS:
+        if key == "faculty_notes":
+            continue
+        value = raw.get(key)
+        if not isinstance(value, str):
+            raise AppError(502, DRAFT_FAILED)
+        content[key] = value
+    return apply_snapshot_facts(content, snapshot)
+
+
+def final_content(payload) -> dict:
+    if not isinstance(payload, dict):
+        raise AppError(400, FINAL_CONTENT_OBJECT)
+    missing = [key for key in REPORT_KEYS if key not in payload]
+    if missing:
+        raise AppError(400, FINAL_CONTENT_MISSING)
+    content = {}
+    for key in REPORT_KEYS:
+        if not isinstance(payload[key], str):
+            raise AppError(400, f"{key} must be a string")
+        content[key] = payload[key]
+    if all(not value.strip() for value in content.values()):
+        raise AppError(400, FINAL_CONTENT_EMPTY)
+    return content

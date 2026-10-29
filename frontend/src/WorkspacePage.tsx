@@ -266,7 +266,10 @@ export function WorkspacePage() {
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) return
       if (error instanceof ApiError && error.status === 409) {
-        toast('A sprint is already planned or active.')
+        toast(
+          error.detail ||
+            'A Planned or Active sprint already exists for this project.',
+        )
       } else {
         toast("Couldn't save that — try again.")
       }
@@ -1530,8 +1533,9 @@ function sortStories(rows: Story[], mode: SortMode) {
     if (mode === 'priority') {
       const rank = priorityRank(a.priority) - priorityRank(b.priority)
       if (rank !== 0) return rank
+      return Date.parse(a.created_at) - Date.parse(b.created_at)
     }
-    return Date.parse(a.created_at) - Date.parse(b.created_at)
+    return Date.parse(b.created_at) - Date.parse(a.created_at)
   })
 }
 
@@ -1902,7 +1906,9 @@ export function TeamDialog({
       setError('')
     } catch (caught) {
       if (caught instanceof ApiError && caught.status === 409) {
-        setError('That name is already on this project.')
+        setError(
+          caught.detail || 'A team member with that name already exists.',
+        )
       } else if (!(caught instanceof ApiError) || caught.status !== 401) {
         setError("Couldn't save that — try again.")
       }

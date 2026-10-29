@@ -12,7 +12,9 @@ from db import Database, sqlite_path
 from domain import (
     NO_FACULTY_NOTES,
     NOTHING_COMPLETED,
+    REPORT_KEYS,
     AppError,
+    final_content,
     mention_ids,
     normalize_faculty_notes,
 )
@@ -32,6 +34,7 @@ def client(tmp_path):
     database = WorkspaceDAO(f"sqlite:///{tmp_path / 'workspace.db'}")
     database.apply_migrations()
     main.dao = database
+    main.service.dao = database
     main.report_drafter = None
     with TestClient(main.app) as test_client:
         yield test_client
@@ -801,7 +804,15 @@ def test_draft_failures_do_not_replace_a_saved_report(client):
     )
     assert bad_type.status_code == 400
     with pytest.raises(AppError):
-        main._final_content(["nope"])
+        final_content(["nope"])
+    blank = {key: "   " for key in REPORT_KEYS}
+    empty = client.put(
+        f"/sprints/{sprint_id}/report",
+        json={"final_content": blank},
+        headers=headers,
+    )
+    assert empty.status_code == 400
+    assert empty.json()["detail"] == "final_content is empty"
 
 
 def test_project_report_drafts_from_the_board_without_closing_a_sprint(client):
