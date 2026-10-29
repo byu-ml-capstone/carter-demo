@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { api, ApiError } from './api'
-import { authorKey } from './reportGuard'
+import { authorKey } from './authorStorage'
 import { toast } from './toast'
 import type { Comment, Member } from './types'
 import { formatWhen } from './ui'
@@ -218,6 +218,10 @@ export function CommentThread({
   )
 }
 
+function isNameChar(ch: string) {
+  return /[\p{L}\p{N}]/u.test(ch) || ch === ' '
+}
+
 function mentionQuery(value: string, caret: number) {
   const upto = value.slice(0, caret)
   const start = upto.lastIndexOf('@')
@@ -257,7 +261,7 @@ export function MentionText({
       const slice = body.slice(at + 1, at + 1 + member.name.length)
       if (slice.toLowerCase() !== member.name.toLowerCase()) return false
       const next = body[at + 1 + member.name.length]
-      return !next || !/[A-Za-z0-9 ]/.test(next)
+      return next === undefined || !isNameChar(next)
     })
     if (!match) {
       parts.push({ key: `t-${part}`, text: '@', hit: false })

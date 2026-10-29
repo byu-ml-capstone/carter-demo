@@ -11,7 +11,7 @@ ignore = ["B008", "BLE001"]
 testpaths = ["tests"]
 
 [tool.coverage.run]
-source = ["main", "dao", "domain", "auth", "db", "sprint_report"]
+source = ["main", "dao", "domain", "auth", "db", "service", "sprint_report"]
 omit = [
     "tests/*",
     "*/test_*.py",

@@ -1,6 +1,7 @@
 import builtins
 import importlib
 import sqlite3
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -12,7 +13,13 @@ from db import Database, sqlite_path
 from domain import (
     NO_FACULTY_NOTES,
     NOTHING_COMPLETED,
+    PRIORITIES,
+    REPORT_KEYS,
+    SPRINT_STATUSES,
+    STATUSES,
+    TYPES,
     AppError,
+    final_content,
     mention_ids,
     normalize_faculty_notes,
 )
@@ -32,6 +39,7 @@ def client(tmp_path):
     database = WorkspaceDAO(f"sqlite:///{tmp_path / 'workspace.db'}")
     database.apply_migrations()
     main.dao = database
+    main.service.dao = database
     main.report_drafter = None
     with TestClient(main.app) as test_client:
         yield test_client
@@ -801,7 +809,15 @@ def test_draft_failures_do_not_replace_a_saved_report(client):
     )
     assert bad_type.status_code == 400
     with pytest.raises(AppError):
-        main._final_content(["nope"])
+        final_content(["nope"])
+    blank = {key: "   " for key in REPORT_KEYS}
+    empty = client.put(
+        f"/sprints/{sprint_id}/report",
+        json={"final_content": blank},
+        headers=headers,
+    )
+    assert empty.status_code == 400
+    assert empty.json()["detail"] == "final_content is empty"
 
 
 def test_project_report_drafts_from_the_board_without_closing_a_sprint(client):
@@ -834,7 +850,7 @@ def test_project_report_drafts_from_the_board_without_closing_a_sprint(client):
     report_id = drafted.json()["id"]
     assert body["completed_work"] == "Publish board"
     assert body["faculty_notes"] == "Watch the demo"
-    assert calls[0]["status"] == "Closed"
+    assert "status" not in calls[0]
     assert calls[0]["any_completed"] is True
     assert calls[0]["stories"][0]["status_at_close"] == "Done"
     assert calls[0]["sprint_goal"] is None
@@ -984,3 +1000,9 @@ def test_missing_project_report_and_draft_failures(client, monkeypatch):
     unconfigured = client.post(f"/projects/{pid}/report/draft", json={}, headers=headers)
     assert unconfigured.status_code == 503
     assert unconfigured.json()["detail"] == "Sprint report drafter is not configured."
+
+
+def test_schema_checks_use_the_shared_vocabulary():
+    sql = (Path(__file__).resolve().parents[1] / "migrations" / "001_workspace.sql").read_text()
+    for value in (*STATUSES, *PRIORITIES, *TYPES, *SPRINT_STATUSES):
+        assert f"'{value}'" in sql

@@ -8,14 +8,15 @@ import {
 } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { getToken, logout, setToken, setUnauthorizedHandler } from './api'
+import { clearAuthorKeys } from './authorStorage'
 import {
-  clearAuthorKeys,
   isReportDirty,
   setReportDirty,
   suppressLeaveGuard,
 } from './reportGuard'
 import type { User } from './types'
 import { toast } from './toast'
+import { safeNext } from './ui'
 
 type Session = {
   token: string
@@ -46,9 +47,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setSession(null)
       clearAuthorKeys()
       toast('Your session ended. Sign in again.')
-      const next = `${location.pathname}${location.search}`
-      const safe = next.startsWith('/') && !next.startsWith('//') ? next : '/'
-      navigate(`/sign-in?next=${encodeURIComponent(safe)}`, {
+      const next = safeNext(`${location.pathname}${location.search}`)
+      navigate(`/sign-in?next=${encodeURIComponent(next)}`, {
         replace: true,
         flushSync: true,
       })

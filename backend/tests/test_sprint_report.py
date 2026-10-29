@@ -10,12 +10,12 @@ from types import SimpleNamespace
 
 import pytest
 
+from domain import NO_FACULTY_NOTES
 from sprint_report import SprintReportError, build_model_payload, draft_report
 from sprint_report.course_ai import CourseAINotConfigured, complete_report
 from sprint_report.draft import (
     NO_BLOCKERS,
     NO_COMPLETED,
-    NO_FACULTY_NOTES,
     NO_SPRINT_GOAL,
     NO_UNFINISHED,
 )
@@ -56,6 +56,15 @@ def snapshot(**overrides):
     return base
 
 
+def test_board_snapshot_without_sprint_status_still_drafts():
+    model = FakeModel({"completed_work": "Publish board"})
+    board = snapshot()
+    del board["status"]
+    report = draft_report(board, model=model)
+    assert report["sprint_goal"] == "Ship the board"
+    assert model.calls
+
+
 def test_not_closed_does_not_call_the_model():
     model = FakeModel({"completed_work": "Publish board"})
     for status in ("Planned", "Active"):
@@ -63,7 +72,7 @@ def test_not_closed_does_not_call_the_model():
             draft_report(snapshot(status=status), model=model)
         except SprintReportError as exc:
             assert exc.status_code == 409
-            assert exc.detail == "Sprint is not closed"
+            assert exc.detail == "Sprint is not closed."
         else:
             raise AssertionError(status)
     assert model.calls == []

@@ -4,10 +4,10 @@ These tests call a fake model. They do not open a network connection.
 """
 
 from sprint_report import SprintReportError, build_model_payload, draft_report
+from domain import NO_FACULTY_NOTES
 from sprint_report.draft import (
     NO_BLOCKERS,
     NO_COMPLETED,
-    NO_FACULTY_NOTES,
     NO_SPRINT_GOAL,
     NO_UNFINISHED,
 )
@@ -55,7 +55,7 @@ def test_not_closed_does_not_call_the_model():
             draft_report(snapshot(status=status), model=model)
         except SprintReportError as exc:
             assert exc.status_code == 409
-            assert exc.detail == "Sprint is not closed"
+            assert exc.detail == "Sprint is not closed."
         else:
             raise AssertionError(status)
     assert model.calls == []

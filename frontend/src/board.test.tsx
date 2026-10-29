@@ -141,7 +141,12 @@ describe('board', () => {
     const stories: Story[] = []
     let sprints: Sprint[] = []
     let createStory: Result = { status: 500, json: {} }
-    let plan: Result = { status: 409, json: { detail: 'taken' } }
+    let plan: Result = {
+      status: 409,
+      json: {
+        detail: 'A Planned or Active sprint already exists for this project.',
+      },
+    }
     mockFetch((call) => {
       const path = pathOf(call.url)
       if (path === '/projects/p1' && call.method === 'GET')
@@ -203,7 +208,9 @@ describe('board', () => {
     })
     await user.click(screen.getByRole('button', { name: 'Plan sprint' }))
     expect(
-      await screen.findByText('A sprint is already planned or active.'),
+      await screen.findByText(
+        'A Planned or Active sprint already exists for this project.',
+      ),
     ).toBeInTheDocument()
     plan = { status: 500, json: {} }
     await user.click(screen.getByRole('button', { name: 'Plan sprint' }))
@@ -423,7 +430,10 @@ describe('board', () => {
         if ((call.body as { name?: string }).name === 'Ann')
           return { status: 201, json: { id: 'ann', name: 'Ann' } }
         if ((call.body as { name?: string }).name === 'Bea')
-          return { status: 409, json: { detail: 'taken' } }
+          return {
+            status: 409,
+            json: { detail: 'A team member with that name already exists.' },
+          }
         return { status: 500, json: {} }
       }
       if (path === '/stories/s1/comments' && call.method === 'GET')
@@ -498,7 +508,9 @@ describe('board', () => {
     })
     await user.click(within(team).getByRole('button', { name: 'Add teammate' }))
     expect(
-      await within(team).findByText('That name is already on this project.'),
+      await within(team).findByText(
+        'A team member with that name already exists.',
+      ),
     ).toBeInTheDocument()
     fireEvent.change(within(team).getByLabelText('Name'), {
       target: { value: 'Cy' },

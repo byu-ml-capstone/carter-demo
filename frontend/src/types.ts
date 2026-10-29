@@ -1,19 +1,20 @@
-export const STATUSES = [
-  'Backlog',
-  'Selected for Sprint',
-  'In Progress',
-  'Done',
-] as const
+import vocabulary from './vocabulary.json'
 
+export const STATUSES = vocabulary.statuses
 export type Status = (typeof STATUSES)[number]
 
-export const PRIORITIES = ['Low', 'Medium', 'High'] as const
+export const PRIORITIES = vocabulary.priorities
 export type Priority = (typeof PRIORITIES)[number]
 
-export const STORY_TYPES = ['Feature', 'Bug', 'Chore'] as const
+export const STORY_TYPES = vocabulary.storyTypes
 export type StoryType = (typeof STORY_TYPES)[number]
 
-export type SprintStatus = 'Planned' | 'Active' | 'Closed'
+export const SPRINT_STATUSES = vocabulary.sprintStatuses
+export type SprintStatus = (typeof SPRINT_STATUSES)[number]
+
+export const PRIORITY_RANK = Object.fromEntries(
+  vocabulary.priorityRank,
+) as Record<Priority, number>
 
 export type SortMode = 'priority' | 'created_at'
 
@@ -112,14 +113,13 @@ export type SavedReport = SprintReport & {
   stories_snapshot?: ReportSnapshotStory[]
 }
 
-export const REPORT_KEYS = [
+export const REPORT_KEYS = vocabulary.reportKeys as unknown as readonly [
   'sprint_goal',
   'completed_work',
   'next_sprint_goals',
   'blockers',
   'faculty_notes',
-] as const
-
+]
 export type ReportKey = (typeof REPORT_KEYS)[number]
 
 export const REPORT_LABELS: Record<ReportKey, string> = {
@@ -130,16 +130,17 @@ export const REPORT_LABELS: Record<ReportKey, string> = {
   faculty_notes: 'Faculty notes',
 }
 
-export const NO_BLOCKERS = 'No blockers were recorded for this sprint'
-export const NONE_COMPLETED = 'No stories were completed this sprint'
-export const NO_FACULTY_NOTES = 'No faculty notes recorded'
-export const EMPTY_SPRINT_DETAIL =
-  "This project has no stories, so there's nothing to report"
+export const NO_BLOCKERS = vocabulary.noBlockers
+export const NONE_COMPLETED = vocabulary.nothingCompleted
+export const NO_FACULTY_NOTES = vocabulary.noFacultyNotes
+export const EMPTY_SPRINT_DETAIL = vocabulary.emptyProject
+export const ALREADY_MOVED = vocabulary.alreadyMoved
+export const SIGN_IN_REQUIRED = vocabulary.signInRequired
+export const CREDENTIALS_WRONG = vocabulary.credentialsWrong
+export const EMAIL_TAKEN = vocabulary.emailTaken
+export const PROJECT_NAME_TAKEN = vocabulary.projectNameTaken
+export const SPRINT_ALREADY_OPEN = vocabulary.sprintAlreadyOpen
+export const MEMBER_NAME_TAKEN = vocabulary.memberNameTaken
 
-export const EMPTY_REPORT = (): ReportFields => ({
-  sprint_goal: '',
-  completed_work: '',
-  next_sprint_goals: '',
-  blockers: '',
-  faculty_notes: '',
-})
+export const EMPTY_REPORT = (): ReportFields =>
+  Object.fromEntries(REPORT_KEYS.map((key) => [key, ''])) as ReportFields

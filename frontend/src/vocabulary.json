@@ -1,0 +1,31 @@
+{
+  "statuses": ["Backlog", "Selected for Sprint", "In Progress", "Done"],
+  "priorities": ["Low", "Medium", "High"],
+  "storyTypes": ["Feature", "Bug", "Chore"],
+  "sprintStatuses": ["Planned", "Active", "Closed"],
+  "priorityRank": [
+    ["High", 0],
+    ["Medium", 1],
+    ["Low", 2]
+  ],
+  "reportKeys": [
+    "sprint_goal",
+    "completed_work",
+    "next_sprint_goals",
+    "blockers",
+    "faculty_notes"
+  ],
+  "nothingCompleted": "No stories were completed this sprint",
+  "noFacultyNotes": "No faculty notes recorded",
+  "noBlockers": "No blockers were recorded for this sprint",
+  "alreadyMoved": "This story was already moved.",
+  "emptyProject": "This project has no stories, so there's nothing to report",
+  "emptySprint": "This sprint had no stories, so there's nothing to report",
+  "signInRequired": "Sign in required.",
+  "credentialsWrong": "Email or password is wrong.",
+  "emailTaken": "An account with that email already exists.",
+  "emailInvalid": "email must contain @",
+  "projectNameTaken": "A project with that name already exists.",
+  "sprintAlreadyOpen": "A Planned or Active sprint already exists for this project.",
+  "memberNameTaken": "A team member with that name already exists."
+}
